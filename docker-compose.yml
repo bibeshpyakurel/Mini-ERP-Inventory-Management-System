@@ -1,47 +1,70 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
     container_name: mini-erp-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: mini_erp
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-mini_erp}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-mini_erp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  api:
-    image: mcr.microsoft.com/dotnet/sdk:9.0
-    container_name: mini-erp-api
-    working_dir: /app/backend
-    command: ["bash", "-lc", "echo 'Backend scaffold placeholder. Run dotnet restore/build after SDK setup.' && tail -f /dev/null"]
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: mini-erp-backend
+    restart: unless-stopped
     env_file:
       - ./backend/.env.example
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: ${ASPNETCORE_URLS:-http://0.0.0.0:5000}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-mini_erp};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
+      Jwt__Issuer: ${JWT_ISSUER:-MiniErp}
+      Jwt__Audience: ${JWT_AUDIENCE:-MiniErp.Client}
+      Jwt__Key: ${JWT_KEY:-super-secret-development-key-change-me}
     ports:
-      - "5000:5000"
-      - "5001:5001"
+      - "${BACKEND_PORT:-5000}:5000"
     volumes:
-      - .:/app
+      - ./backend:/app/backend
+    working_dir: /app/backend/src/MiniErp.Api
+    command: ["dotnet", "run", "--project", "MiniErp.Api.csproj", "--urls", "http://0.0.0.0:5000"]
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   frontend:
-    image: node:22
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
     container_name: mini-erp-frontend
-    working_dir: /app/frontend
-    command: ["bash", "-lc", "if [ -f package.json ]; then npm install && npm run dev -- --host 0.0.0.0; else echo 'Frontend package.json not found'; fi"]
+    restart: unless-stopped
     env_file:
       - ./frontend/.env.example
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5000/api}
+      VITE_APP_NAME: ${VITE_APP_NAME:-Mini ERP Inventory Management System}
+      VITE_AUTH_TOKEN_STORAGE_KEY: ${VITE_AUTH_TOKEN_STORAGE_KEY:-mini-erp.access-token}
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     volumes:
-      - .:/app
+      - ./frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+    working_dir: /app/frontend
+    command: ["sh", "-lc", "npm install && npm run dev -- --host 0.0.0.0 --port 5173"]
     depends_on:
-      - api
+      - backend
 
 volumes:
   postgres_data:
+  frontend_node_modules:

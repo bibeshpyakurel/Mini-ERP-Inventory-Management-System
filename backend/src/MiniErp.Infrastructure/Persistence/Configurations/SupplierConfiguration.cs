@@ -14,5 +14,7 @@ public sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         builder.Property(x => x.ContactName).HasMaxLength(120).IsRequired();
         builder.Property(x => x.Email).HasMaxLength(200).IsRequired();
         builder.Property(x => x.Phone).HasMaxLength(30).IsRequired();
+        builder.Property(x => x.Notes).HasMaxLength(1000);
+        builder.HasIndex(x => x.Email).IsUnique();
     }
 }

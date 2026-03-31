@@ -18,6 +18,7 @@ public interface IApplicationDbContext
     DbSet<Role> Roles { get; }
     DbSet<StockAdjustment> StockAdjustments { get; }
     DbSet<Supplier> Suppliers { get; }
+    DbSet<SupplierItem> SupplierItems { get; }
     DbSet<User> Users { get; }
     DbSet<UserRole> UserRoles { get; }
     DbSet<Warehouse> Warehouses { get; }

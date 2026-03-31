@@ -12,4 +12,20 @@ public sealed class GoodsReceiptLine : BaseEntity
     public GoodsReceipt? GoodsReceipt { get; set; }
     public PurchaseOrderLine? PurchaseOrderLine { get; set; }
     public Item? Item { get; set; }
+
+    public static GoodsReceiptLine Create(Guid goodsReceiptId, Guid purchaseOrderLineId, Guid itemId, int receivedQuantity)
+    {
+        Guard.AgainstEmpty(goodsReceiptId, nameof(goodsReceiptId));
+        Guard.AgainstEmpty(purchaseOrderLineId, nameof(purchaseOrderLineId));
+        Guard.AgainstEmpty(itemId, nameof(itemId));
+        Guard.AgainstZeroOrNegative(receivedQuantity, nameof(receivedQuantity));
+
+        return new GoodsReceiptLine
+        {
+            GoodsReceiptId = goodsReceiptId,
+            PurchaseOrderLineId = purchaseOrderLineId,
+            ItemId = itemId,
+            ReceivedQuantity = receivedQuantity
+        };
+    }
 }

@@ -21,6 +21,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<StockAdjustment> StockAdjustments => Set<StockAdjustment>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<SupplierItem> SupplierItems => Set<SupplierItem>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();

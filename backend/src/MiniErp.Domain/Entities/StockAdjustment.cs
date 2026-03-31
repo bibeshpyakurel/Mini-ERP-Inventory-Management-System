@@ -18,4 +18,33 @@ public sealed class StockAdjustment : BaseEntity
     public Warehouse? Warehouse { get; set; }
     public Location? Location { get; set; }
     public User? PerformedByUser { get; set; }
+
+    public static StockAdjustment Create(
+        Guid itemId,
+        Guid warehouseId,
+        Guid locationId,
+        AdjustmentType adjustmentType,
+        int quantityDelta,
+        string reason,
+        Guid performedByUserId)
+    {
+        Guard.AgainstEmpty(itemId, nameof(itemId));
+        Guard.AgainstEmpty(warehouseId, nameof(warehouseId));
+        Guard.AgainstEmpty(locationId, nameof(locationId));
+        Guard.AgainstEmpty(performedByUserId, nameof(performedByUserId));
+        Guard.AgainstZeroOrNegative(quantityDelta, nameof(quantityDelta));
+        Guard.AgainstNullOrWhiteSpace(reason, nameof(reason), 500);
+
+        return new StockAdjustment
+        {
+            ItemId = itemId,
+            WarehouseId = warehouseId,
+            LocationId = locationId,
+            AdjustmentType = adjustmentType,
+            QuantityDelta = quantityDelta,
+            Reason = reason.Trim(),
+            PerformedByUserId = performedByUserId,
+            PerformedAt = DateTime.UtcNow
+        };
+    }
 }

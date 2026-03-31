@@ -11,6 +11,7 @@ public sealed class InventoryTransactionConfiguration : IEntityTypeConfiguration
         builder.ToTable("inventory_transactions");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.ReferenceType).HasMaxLength(50).IsRequired();
+        builder.Property(x => x.Reason).HasMaxLength(500);
 
         builder.HasOne(x => x.Item)
             .WithMany(x => x.InventoryTransactions)

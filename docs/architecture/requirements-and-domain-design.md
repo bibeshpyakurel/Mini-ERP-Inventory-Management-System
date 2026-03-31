@@ -230,12 +230,15 @@ The following actions must create audit log entries:
 - role assignment changes
 - item creation
 - item update
+- item status change
 - supplier creation
 - supplier update
 - purchase order creation
+- purchase order update
 - purchase order status change
 - goods receipt posting
 - stock issue
+- stock receipt
 - stock adjustment
 - item deactivation
 - deletion or soft deletion of sensitive records

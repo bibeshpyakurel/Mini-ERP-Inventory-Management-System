@@ -1,100 +1,84 @@
 # Mini ERP Inventory Management System
 
-Mini ERP Inventory Management System is a portfolio project designed to simulate the kind of internal inventory and ERP workflows used by manufacturing and operations-driven companies. The goal is to demonstrate practical business application design using a modern stack while modeling the same kinds of workflows commonly found in legacy ERP environments.
+Mini ERP Inventory Management System is a full-stack internal business web app built to simulate the kind of inventory and purchasing workflows used by manufacturing, warehousing, and operations-driven companies. It is designed as a portfolio project, but it follows the same core ideas you would expect in a real ERP module: traceable stock movement, purchasing workflows, reporting, and role-based access.
 
-## Project Goal
+## Project Summary
 
-Build a full-stack internal inventory management system that supports core ERP-style operations such as item management, supplier management, purchase order receiving, stock movement tracking, and low-stock reporting.
+This project demonstrates how to build a modern ERP-style inventory system using:
 
-This project is intended to show:
+- `React` for the frontend
+- `ASP.NET Core Web API` for backend business logic
+- `PostgreSQL` for data storage
+- `OpenAPI / Swagger` for API exploration and testing
 
-- understanding of inventory and ERP business workflows
-- ability to design and build a layered business application
-- experience with API design, database modeling, and frontend integration
-- readiness to work on operational software that values stability, traceability, and maintainability
+The application supports:
 
-## MVP Scope
-
-The initial MVP will include:
-
-- user authentication with role-based access
+- secure sign-in
 - item master management
 - supplier management
-- inventory balance tracking
-- inventory transaction history
-- purchase order creation and viewing
-- goods receipt against purchase orders
-- stock issue and stock adjustment flows
-- low-stock dashboard and summary reporting
-- OpenAPI documentation for the backend API
+- inventory tracking
+- stock issue and stock adjustment workflows
+- purchase order management
+- goods receipt processing
+- reporting and dashboard KPIs
+- audit logging
 
-## Core Business Workflows
+## Resume-Ready Summary
 
-### 1. Item Master Management
+Built a full-stack mini ERP inventory management system using `React`, `.NET 9`, `PostgreSQL`, and `OpenAPI`. Implemented item, supplier, inventory, purchasing, reporting, and audit-log workflows with role-based authentication, seeded demo data, and a layered backend architecture designed to model real internal business software.
 
-- create and update inventory items
-- assign SKU, category, unit, reorder level, and storage location
-- activate or deactivate items
+## Architecture Overview
 
-### 2. Supplier Management
+The project uses a standard 3-tier web application architecture:
 
-- create and maintain supplier records
-- associate suppliers with procurement workflows
-
-### 3. Purchase Order Workflow
-
-- create purchase orders for suppliers
-- add purchase order line items
-- track purchase order status
-
-### 4. Goods Receipt Workflow
-
-- receive stock against an existing purchase order
-- increase inventory on hand
-- update received quantities on the purchase order
-- record transaction history for auditability
-
-### 5. Inventory Issue Workflow
-
-- issue stock for usage, sale, or internal allocation
-- decrease inventory on hand
-- prevent invalid negative stock movements
-
-### 6. Stock Adjustment Workflow
-
-- manually adjust stock for damage, loss, or corrections
-- require reason tracking for every adjustment
-- keep an auditable transaction history
-
-### 7. Reporting Workflow
-
-- view low-stock items
-- review recent inventory transactions
-- display stock summary metrics
-
-## Proposed Architecture
-
-The project will use a standard three-tier architecture:
-
-- `React` frontend for user interaction
-- `ASP.NET Core Web API` backend for business logic and API endpoints
-- `PostgreSQL` database for transactional data storage
-
-Supporting components:
-
-- `OpenAPI / Swagger` for API documentation
-- `JWT` for authentication
-- role-based authorization
-- structured logging
-- audit trail for critical inventory actions
-
-## Exact Tech Stack Versions
-
-These versions are selected to keep the stack modern, stable, and interview-friendly.
+```text
+Browser
+  -> React frontend
+  -> ASP.NET Core API
+  -> PostgreSQL database
+```
 
 ### Frontend
 
-- `Node.js 22 LTS`
+The frontend is a React single-page application that runs in the browser. It handles:
+
+- login flow
+- protected routes
+- forms and validation
+- tables, reports, and dashboards
+- API calls to the backend
+
+### Backend
+
+The backend is an ASP.NET Core Web API. It acts as the main business layer and handles:
+
+- authentication and authorization
+- ERP business rules
+- stock movement logic
+- purchase order workflows
+- reporting queries
+- audit logging
+- database access through EF Core
+
+### Database
+
+The PostgreSQL database stores:
+
+- users and roles
+- items and categories
+- suppliers and supplier-item mappings
+- inventory balances
+- inventory transactions
+- purchase orders and purchase order lines
+- goods receipts
+- stock adjustments
+- audit logs
+
+## Tech Stack
+
+### Frontend
+
+- `Node.js 22`
 - `React 19`
 - `TypeScript 5`
 - `Vite 7`
@@ -109,15 +93,16 @@ These versions are selected to keep the stack modern, stable, and interview-frie
 - `.NET 9`
 - `ASP.NET Core Web API`
 - `Entity Framework Core 9`
-- `Npgsql Entity Framework Core Provider 9`
-- `FluentValidation 11`
-- `Swashbuckle.AspNetCore 7`
-- `Serilog.AspNetCore 9`
+- `Npgsql` PostgreSQL provider
+- `FluentValidation`
+- `Serilog`
+- `JWT Bearer Authentication`
+- `Swagger / OpenAPI`
 
-### Database and Tooling
+### Database and Dev Tooling
 
 - `PostgreSQL 16`
-- `Docker Compose v2`
+- `Docker Compose`
 
 ## Repository Structure
 
@@ -125,113 +110,290 @@ These versions are selected to keep the stack modern, stable, and interview-frie
 .
 ├── backend/
 │   ├── src/
+│   │   ├── MiniErp.Api/
+│   │   ├── MiniErp.Application/
+│   │   ├── MiniErp.Domain/
+│   │   └── MiniErp.Infrastructure/
 │   └── tests/
+│       ├── MiniErp.UnitTests/
+│       └── MiniErp.IntegrationTests/
 ├── docs/
 │   ├── api/
-│   └── architecture/
+│   ├── architecture/
+│   └── screenshots/
 ├── frontend/
 └── README.md
 ```
 
-Planned backend structure:
+## Business Workflows
 
-```text
-backend/
-├── src/
-│   ├── MiniErp.Api/
-│   ├── MiniErp.Application/
-│   ├── MiniErp.Domain/
-│   └── MiniErp.Infrastructure/
-└── tests/
-    ├── MiniErp.UnitTests/
-    └── MiniErp.IntegrationTests/
+### 1. Authentication
+
+- user signs in with email and password
+- backend verifies password hash
+- API returns JWT token
+- frontend stores token and uses it for protected requests
+
+### 2. Item Master
+
+- create inventory items
+- assign category, SKU, unit, reorder level, and cost
+- activate and deactivate items
+
+### 3. Supplier Management
+
+- create and maintain supplier records
+- associate suppliers with items they provide
+
+### 4. Purchase Orders
+
+- create purchase orders
+- add line items
+- track status as draft, approved, partially received, completed, or cancelled
+
+### 5. Goods Receipt
+
+- receive stock against purchase orders
+- update received quantities
+- generate inventory transactions
+
+### 6. Inventory Operations
+
+- view balances by item and location
+- issue stock for operational usage
+- adjust stock for corrections or damage
+- keep an auditable transaction history
+
+### 7. Reporting
+
+- dashboard KPIs
+- low-stock reporting
+- stock valuation
+- purchase order summaries
+- recent transaction activity
+
+### 8. Audit Logging
+
+- log key actions such as login, purchasing, receipts, stock issue, and stock adjustment
+- expose read-only audit history for administrators
+
+## Demo Data
+
+The local demo database includes seeded data so the UI is useful immediately after startup.
+
+Current demo coverage includes:
+
+- `6` inventory items
+- `3` suppliers
+- `6` purchase orders across multiple statuses
+- `7` inventory transactions
+- low-stock examples
+- audit log activity
+
+Demo login accounts:
+
+- `admin@minierp.local` / `Admin123!`
+- `warehouse@minierp.local` / `Warehouse123!`
+
+## Setup Instructions
+
+### Prerequisites
+
+Install:
+
+- `.NET 9 SDK`
+- `Node.js`
+- `PostgreSQL 16`
+
+Optional:
+
+- `Docker Desktop` or Docker Engine with Compose
+
+### Quick Start
+
+1. Start PostgreSQL
+2. Run the backend API
+3. Run the frontend dev server
+4. Open `http://localhost:5173`
+5. Sign in with `admin@minierp.local` / `Admin123!`
+
+### Local Development
+
+Start PostgreSQL if it is not already running:
+
+```bash
+brew services start postgresql@16
 ```
 
-## Naming Conventions
+Restore the backend dependencies:
 
-### Projects and Folders
+```bash
+cd "/Users/bibeshpyakurel/Documents/GitHub/Mini ERP Inventory Management System"
+export DOTNET_ROOT=/opt/homebrew/opt/dotnet@9/libexec
+export PATH="/opt/homebrew/opt/dotnet@9/bin:$PATH"
+dotnet restore backend/MiniErp.sln
+```
 
-- Use `PascalCase` for .NET project names: `MiniErp.Api`
-- Use feature-oriented folders where practical
-- Use `camelCase` only for frontend local variables and functions
-- Use `PascalCase` for React components and TypeScript types
+Run the backend:
 
-### C# Code
+```bash
+cd "/Users/bibeshpyakurel/Documents/GitHub/Mini ERP Inventory Management System"
+export ASPNETCORE_ENVIRONMENT=Development
+export DOTNET_ROOT=/opt/homebrew/opt/dotnet@9/libexec
+export PATH="/opt/homebrew/opt/dotnet@9/bin:$PATH"
+dotnet run --no-build --project backend/src/MiniErp.Api/MiniErp.Api.csproj --urls http://127.0.0.1:5000
+```
 
-- Use `PascalCase` for classes, records, enums, DTOs, and public members
-- Use `camelCase` for local variables and parameters
-- Suffix request DTOs with `Request`
-- Suffix response DTOs with `Response`
-- Suffix services with `Service`
-- Suffix repository interfaces with `Repository`
+Run the frontend:
 
-Examples:
+```bash
+cd "/Users/bibeshpyakurel/Documents/GitHub/Mini ERP Inventory Management System/frontend"
+npm install
+npm run dev -- --host 0.0.0.0 --port 5173
+```
 
-- `CreateItemRequest`
-- `ItemResponse`
-- `InventoryService`
-- `IPurchaseOrderRepository`
+Open the app:
 
-### API Conventions
+- frontend: `http://localhost:5173`
+- backend health: `http://127.0.0.1:5000/health`
+- Swagger: `http://127.0.0.1:5000/swagger`
 
-- Use plural resource names in routes
-- Use `/api` as the route prefix
-- Use nouns for resources and HTTP verbs for actions
+### Docker Setup
 
-Examples:
+The repo includes:
 
-- `GET /api/items`
-- `POST /api/items`
-- `GET /api/purchase-orders/{id}`
-- `POST /api/goods-receipts`
-- `POST /api/inventory/issues`
-- `POST /api/inventory/adjustments`
+- `docker-compose.yml`
+- `backend/Dockerfile`
+- `frontend/Dockerfile`
 
-### Database Conventions
+To start with Docker:
 
-- Use `snake_case` for table names and columns
-- Use plural table names
-- Use `_id` suffix for foreign keys
-- Use `created_at` and `updated_at` timestamps where applicable
-- Use explicit enum-like status columns as text or constrained values
+```bash
+docker compose up --build
+```
 
-Examples:
+Expected URLs:
 
-- `items`
-- `purchase_orders`
-- `inventory_transactions`
-- `supplier_id`
-- `reorder_level`
+- frontend: `http://localhost:5173`
+- backend: `http://127.0.0.1:5000`
+- Swagger: `http://127.0.0.1:5000/swagger`
 
-## Initial Delivery Plan
+## Database and Migration Notes
 
-### Phase 1
+The project uses PostgreSQL with Entity Framework Core.
 
-- finalize project scope
-- create repository structure
-- document architecture and conventions
+Current development behavior:
 
-### Phase 2
+- in `Development`, the backend uses `EnsureCreated()` on startup to create the schema for the local demo database
+- seed data is applied through EF Core model seeding
 
-- scaffold backend solution and frontend app
-- configure PostgreSQL, Swagger, and authentication
+Important note:
 
-### Phase 3
+- a full production-style migration history is not finalized yet
+- the migrations folder currently needs proper generated migration files if you want a formal migration workflow
 
-- implement inventory, supplier, and purchase order workflows
-- add reporting and auditability
+Recommended future migration workflow:
 
-## Setup Plan
+```bash
+dotnet ef migrations add InitialCreate --project backend/src/MiniErp.Infrastructure --startup-project backend/src/MiniErp.Api
+dotnet ef database update --project backend/src/MiniErp.Infrastructure --startup-project backend/src/MiniErp.Api
+```
 
-Implementation setup will follow these steps:
+Database design reference:
 
-1. Scaffold the backend `.NET` solution and projects.
-2. Initialize the React frontend with TypeScript and Vite.
-3. Configure PostgreSQL and Entity Framework Core.
-4. Add authentication and role-based authorization.
-5. Build the MVP workflows end-to-end.
-6. Add tests, Docker support, and deployment configuration.
+- [requirements-and-domain-design.md](docs/architecture/requirements-and-domain-design.md)
+
+API outline reference:
+
+- [endpoint-outline.md](docs/api/endpoint-outline.md)
+
+Screenshot reference:
+
+- [docs/screenshots/README.md](docs/screenshots/README.md)
+
+Interview packaging reference:
+
+- [docs/interview-packaging.md](docs/interview-packaging.md)
+- [docs/demo-assets.md](docs/demo-assets.md)
+
+## API Documentation
+
+Once the backend is running:
+
+- Swagger UI: `http://127.0.0.1:5000/swagger`
+
+Suggested demo flow in Swagger:
+
+1. call `POST /api/auth/login`
+2. copy the access token
+3. click `Authorize`
+4. paste `Bearer <token>`
+5. test endpoints like:
+   - `GET /api/items`
+   - `GET /api/suppliers`
+   - `GET /api/inventory/balances`
+   - `GET /api/purchase-orders`
+   - `GET /api/reports/stock-summary`
+   - `GET /api/audit-logs`
+
+## Screenshots
+
+Suggested screenshots for this project should live in `docs/screenshots/`.
+
+Recommended captures:
+
+- login page
+- dashboard
+- items page
+- suppliers page
+- inventory page
+- purchase orders page
+- reports page
+- audit logs page
+
+This repo currently includes the screenshot directory and naming guide, but screenshot image files still need to be captured and added.
+
+## Testing
+
+The repository contains:
+
+- backend unit tests for services and domain logic
+- backend integration tests for API behaviors
+
+Examples covered:
+
+- auth flow
+- item service behavior
+- purchase order logic
+- inventory issue and adjustment rules
+- goods receipt workflow
+- reporting behavior
+
+## Future Improvements
+
+- add formal EF Core migrations and migration history
+- add self-service account creation or admin user management
+- add multiple warehouses and location transfers
+- add pagination and server-side filtering for large datasets
+- improve frontend code splitting to reduce bundle size
+- add screenshot assets to the repository
+- add end-to-end browser tests
+- add deployment instructions for cloud hosting
+- support email notifications for low stock and approvals
 
 ## Why This Project Matters
 
-This project is intentionally designed to resemble a real internal business application rather than a generic CRUD demo. It emphasizes inventory accuracy, transaction traceability, purchasing workflows, and practical reporting, which makes it a strong portfolio piece for ERP, operations, and enterprise software roles.
+This project is intentionally built as an internal operations tool rather than a generic CRUD demo. It focuses on the kinds of workflows that matter in real ERP-style software:
+
+- traceable stock changes
+- approval and receiving workflows
+- operational reporting
+- auditability
+- role-based access
+
+That makes it a strong portfolio piece for:
+
+- ERP and business systems roles
+- internal tools engineering
+- backend and full-stack .NET roles
+- inventory, operations, and manufacturing software teams

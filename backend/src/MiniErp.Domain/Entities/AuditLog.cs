@@ -12,4 +12,22 @@ public sealed class AuditLog : BaseEntity
     public string Details { get; set; } = string.Empty;
 
     public User? PerformedByUser { get; set; }
+
+    public static AuditLog Create(string action, string entityName, Guid performedByUserId, string details, Guid? entityId = null)
+    {
+        Guard.AgainstNullOrWhiteSpace(action, nameof(action), 100);
+        Guard.AgainstNullOrWhiteSpace(entityName, nameof(entityName), 100);
+        Guard.AgainstEmpty(performedByUserId, nameof(performedByUserId));
+        Guard.AgainstNullOrWhiteSpace(details, nameof(details), 4000);
+
+        return new AuditLog
+        {
+            Action = action.Trim(),
+            EntityName = entityName.Trim(),
+            EntityId = entityId,
+            PerformedByUserId = performedByUserId,
+            PerformedAt = DateTime.UtcNow,
+            Details = details.Trim()
+        };
+    }
 }

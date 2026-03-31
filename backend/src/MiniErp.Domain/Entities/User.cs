@@ -15,4 +15,41 @@ public sealed class User : BaseEntity
     public ICollection<GoodsReceipt> GoodsReceipts { get; set; } = new List<GoodsReceipt>();
     public ICollection<StockAdjustment> StockAdjustments { get; set; } = new List<StockAdjustment>();
     public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
+
+    public static User Create(string email, string passwordHash, string fullName)
+    {
+        Guard.AgainstInvalidEmail(email, nameof(email));
+        Guard.AgainstNullOrWhiteSpace(passwordHash, nameof(passwordHash), 500);
+        Guard.AgainstNullOrWhiteSpace(fullName, nameof(fullName), 200);
+
+        return new User
+        {
+            Email = email.Trim(),
+            PasswordHash = passwordHash.Trim(),
+            FullName = fullName.Trim(),
+            IsActive = true
+        };
+    }
+
+    public void UpdateProfile(string fullName, string email)
+    {
+        Guard.AgainstNullOrWhiteSpace(fullName, nameof(fullName), 200);
+        Guard.AgainstInvalidEmail(email, nameof(email));
+
+        FullName = fullName.Trim();
+        Email = email.Trim();
+        Touch();
+    }
+
+    public void Deactivate()
+    {
+        IsActive = false;
+        Touch();
+    }
+
+    public void Activate()
+    {
+        IsActive = true;
+        Touch();
+    }
 }
