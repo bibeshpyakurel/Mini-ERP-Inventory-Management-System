@@ -1,12 +1,43 @@
-import { Alert, Box, CircularProgress, Grid, Paper, Stack, Typography } from "@mui/material";
+import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import { Alert, Box, Button, CircularProgress, Grid, Paper, Stack, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
+import { Link as RouterLink } from "react-router-dom";
 import { ApiClientError } from "../api/client";
 import { PageSection } from "../components/PageSection";
 import { useAuth } from "../features/auth/AuthContext";
 import { reportsApi } from "../features/reports/api";
 
 export function DashboardPage() {
-  const { accessToken } = useAuth();
+  const { accessToken, primaryRole } = useAuth();
+
+  const demoJourneys = [
+    {
+      title: "Review core master data",
+      description: "Inspect seeded items and suppliers to understand the operational model quickly.",
+      path: "/items",
+      cta: "Open items",
+    },
+    {
+      title: "Walk the purchasing flow",
+      description: "Open purchase orders, check statuses, and post a goods receipt against an existing PO.",
+      path: "/purchase-orders",
+      cta: "Open purchase orders",
+    },
+    {
+      title: "Validate warehouse movements",
+      description: "Check balances, issue stock, apply an adjustment, and confirm the transaction trail.",
+      path: "/inventory",
+      cta: "Open inventory",
+    },
+    {
+      title: "See business outputs",
+      description: primaryRole === "Admin"
+        ? "Use reports and audit logs to show KPI visibility and operational traceability."
+        : "Use reports to show KPI visibility and low-friction operational insight.",
+      path: primaryRole === "Admin" ? "/audit-logs" : "/reports",
+      cta: primaryRole === "Admin" ? "Open audit logs" : "Open reports",
+    },
+  ] as const;
 
   const stockSummaryQuery = useQuery({
     queryKey: ["dashboard-stock-summary"],
@@ -75,6 +106,49 @@ export function DashboardPage() {
 
   return (
     <Stack spacing={3}>
+      <PageSection
+        eyebrow="Demo Flow"
+        title="Explore the system in a few minutes"
+        description="This build is optimized for quick evaluation: use the guided path below to understand value fast without any setup inside the app."
+      >
+        <Grid container spacing={2}>
+          {demoJourneys.map((journey, index) => (
+            <Grid key={journey.title} size={{ xs: 12, md: 6 }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: 4,
+                  border: "1px solid rgba(15,82,87,0.12)",
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(15,82,87,0.04) 100%)",
+                }}
+              >
+                <Stack spacing={1.5}>
+                  <Typography variant="overline" sx={{ letterSpacing: 1.6, color: "primary.main" }}>
+                    Step {index + 1}
+                  </Typography>
+                  <Typography variant="h6">{journey.title}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {journey.description}
+                  </Typography>
+                  <Box>
+                    <Button
+                      component={RouterLink}
+                      to={journey.path}
+                      variant="text"
+                      endIcon={<ArrowForwardRoundedIcon />}
+                      sx={{ px: 0 }}
+                    >
+                      {journey.cta}
+                    </Button>
+                  </Box>
+                </Stack>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+      </PageSection>
+
       <PageSection
         eyebrow="Overview"
         title="Operations dashboard"

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MiniErp.Application.Common.Interfaces;
 using MiniErp.Application.Common.Interfaces.Services;
 using MiniErp.Domain.Common;
 using MiniErp.Domain.Entities;
@@ -26,6 +27,7 @@ public sealed class ItemServiceTests
             new ItemRepository(dbContext),
             new CategoryRepository(dbContext),
             new AuditLogRepository(dbContext),
+            new TestCurrentUserService(SeedConstants.AdminUserId),
             dbContext);
 
         var item = await service.CreateItemAsync(
@@ -72,6 +74,7 @@ public sealed class ItemServiceTests
             new ItemRepository(dbContext),
             new CategoryRepository(dbContext),
             new AuditLogRepository(dbContext),
+            new TestCurrentUserService(SeedConstants.AdminUserId),
             dbContext);
 
         await service.UpdateItemAsync(
@@ -155,6 +158,7 @@ public sealed class ItemServiceTests
             new ItemRepository(dbContext),
             new CategoryRepository(dbContext),
             new AuditLogRepository(dbContext),
+            new TestCurrentUserService(SeedConstants.AdminUserId),
             dbContext);
 
     private static void SeedCategoryAndItems(ApplicationDbContext dbContext)
@@ -192,5 +196,15 @@ public sealed class ItemServiceTests
             });
 
         dbContext.SaveChanges();
+    }
+
+    private sealed class TestCurrentUserService(Guid userId) : ICurrentUserService
+    {
+        public Guid? UserId { get; } = userId;
+        public string? Email => "admin@minierp.local";
+        public IReadOnlyCollection<string> Roles => ["Admin"];
+        public bool IsAuthenticated => true;
+
+        public bool IsInRole(string role) => Roles.Contains(role);
     }
 }

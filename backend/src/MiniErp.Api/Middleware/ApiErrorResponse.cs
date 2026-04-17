@@ -1,11 +1,14 @@
 namespace MiniErp.Api.Middleware;
 
 /// <summary>
-/// Standard API error payload returned for validation, authorization, not-found, conflict, and unexpected-failure responses.
+/// RFC 7807 Problem Details error payload.
+/// See: https://datatracker.ietf.org/doc/html/rfc7807
 /// </summary>
 public sealed record ApiErrorResponse(
     int Status,
     string Title,
     string Detail,
     string TraceId,
+    string? Type = null,
+    string? Instance = null,
     IDictionary<string, string[]>? Errors = null);

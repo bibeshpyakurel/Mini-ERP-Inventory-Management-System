@@ -19,7 +19,6 @@ public sealed record AdjustStockRequest(
     [property: Required] Guid ItemId,
     [property: Required] Guid WarehouseId,
     [property: Required] Guid LocationId,
-    [property: Required] Guid PerformedByUserId,
     [property: Range(typeof(int), "-2147483648", "2147483647")] int QuantityDelta,
     Guid? ReferenceId,
     [property: Required, MaxLength(500)] string Reason);

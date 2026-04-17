@@ -1,13 +1,13 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
+using MiniErp.IntegrationTests.Infrastructure;
 
 namespace MiniErp.IntegrationTests.PurchaseOrders;
 
-public sealed class PurchaseOrdersEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class PurchaseOrdersEndpointTests : IClassFixture<PostgresWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PostgresWebApplicationFactory _factory;
 
-    public PurchaseOrdersEndpointTests(WebApplicationFactory<Program> factory)
+    public PurchaseOrdersEndpointTests(PostgresWebApplicationFactory factory)
     {
         _factory = factory;
     }

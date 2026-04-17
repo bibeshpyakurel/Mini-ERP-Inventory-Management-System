@@ -151,7 +151,15 @@ public sealed class InventoryService(
         await auditLogRepository.AddAsync(
             AuditLog.Create("StockIssued", nameof(InventoryBalance), performedByUserId, $"Issued {quantity} units for item {itemId}. Reason: {reason}", itemId),
             cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new DomainException("The inventory balance was modified by another request. Please try again.");
+        }
     }
 
     public async Task AdjustStockAsync(
@@ -221,7 +229,15 @@ public sealed class InventoryService(
         await auditLogRepository.AddAsync(
             AuditLog.Create("StockAdjusted", nameof(StockAdjustment), performedByUserId, $"Adjusted {quantityDelta} units for item {itemId}. Reason: {reason}", stockAdjustment.Id),
             cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new DomainException("The inventory balance was modified by another request. Please try again.");
+        }
     }
 
     private async Task EnsureReferencesExistAsync(

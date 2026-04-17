@@ -43,7 +43,7 @@ const statusChipColor = (status: string) => {
 
 export function PurchaseOrdersPage() {
   const queryClient = useQueryClient();
-  const { accessToken, currentUser, primaryRole } = useAuth();
+  const { accessToken, primaryRole } = useAuth();
   const [supplierFilter, setSupplierFilter] = useState(ALL_SUPPLIERS);
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -218,19 +218,16 @@ export function PurchaseOrdersPage() {
         </Stack>
       </PageSection>
 
-      {currentUser?.userId ? (
-        <PurchaseOrderFormDialog
-          open={dialogOpen}
-          createdByUserId={currentUser.userId}
-          isSubmitting={createPurchaseOrderMutation.isPending}
-          errorMessage={formError}
-          onClose={() => {
-            setDialogOpen(false);
-            setFormError(null);
-          }}
-          onSubmit={handleCreate}
-        />
-      ) : null}
+      <PurchaseOrderFormDialog
+        open={dialogOpen}
+        isSubmitting={createPurchaseOrderMutation.isPending}
+        errorMessage={formError}
+        onClose={() => {
+          setDialogOpen(false);
+          setFormError(null);
+        }}
+        onSubmit={handleCreate}
+      />
     </Stack>
   );
 }

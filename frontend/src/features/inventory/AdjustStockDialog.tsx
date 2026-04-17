@@ -26,7 +26,6 @@ type AdjustFormValues = z.infer<typeof adjustFormSchema>;
 type AdjustStockDialogProps = {
   open: boolean;
   balance: InventoryBalance | null;
-  performedByUserId: string;
   isSubmitting: boolean;
   errorMessage?: string | null;
   onClose: () => void;
@@ -42,7 +41,6 @@ const getDefaultValues = (): AdjustFormValues => ({
 export function AdjustStockDialog({
   open,
   balance,
-  performedByUserId,
   isSubmitting,
   errorMessage,
   onClose,
@@ -78,7 +76,6 @@ export function AdjustStockDialog({
       itemId: balance.itemId,
       warehouseId: balance.warehouseId,
       locationId: balance.locationId,
-      performedByUserId,
       quantityDelta: parsed.data.quantityDelta,
       referenceId: parsed.data.referenceId || undefined,
       reason: parsed.data.reason.trim(),

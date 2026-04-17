@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniErp.Api.Contracts.GoodsReceipts;
 using MiniErp.Api.Middleware;
+using MiniErp.Application.Common.Interfaces;
 using MiniErp.Application.Common.Interfaces.Services;
 using MiniErp.Domain.Enums;
 using ServiceReceiptLineRequest = MiniErp.Application.Common.Interfaces.Services.PostGoodsReceiptLineRequest;
@@ -13,7 +14,9 @@ namespace MiniErp.Api.Controllers;
 [ApiExplorerSettings(GroupName = "Goods Receipts")]
 [Produces("application/json")]
 [Authorize]
-public sealed class GoodsReceiptsController(IGoodsReceiptService goodsReceiptService) : ControllerBase
+public sealed class GoodsReceiptsController(
+    IGoodsReceiptService goodsReceiptService,
+    ICurrentUserService currentUserService) : ControllerBase
 {
     /// <summary>
     /// Receives inventory against an existing purchase order and updates stock balances and transaction history.
@@ -33,7 +36,7 @@ public sealed class GoodsReceiptsController(IGoodsReceiptService goodsReceiptSer
         var receipt = await goodsReceiptService.ReceiveAgainstPurchaseOrderAsync(
             request.PurchaseOrderId,
             request.ReceiptNumber,
-            request.ReceivedByUserId,
+            currentUserService.UserId!.Value,
             request.ReceivedAtUtc,
             request.Lines.Select(line => new ServiceReceiptLineRequest(
                 line.PurchaseOrderLineId,

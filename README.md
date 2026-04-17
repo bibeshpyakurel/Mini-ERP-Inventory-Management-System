@@ -23,6 +23,19 @@ The application supports:
 - reporting and dashboard KPIs
 - audit logging
 
+## Demo-First Product Goal
+
+This repository is intentionally designed to feel like a realistic ERP application without becoming heavy to evaluate.
+
+The target experience is:
+
+- technically credible for engineers and hiring teams
+- simple enough to explore in one short session
+- easy to boot locally or in Docker
+- immediately usable with seeded data and demo personas
+
+That means the project favors complete workflows, seeded scenarios, and guided exploration over complex tenant setup, user provisioning, or enterprise onboarding steps.
+
 ## Resume-Ready Summary
 
 Built a full-stack mini ERP inventory management system using `React`, `.NET 9`, `PostgreSQL`, and `OpenAPI`. Implemented item, supplier, inventory, purchasing, reporting, and audit-log workflows with role-based authentication, seeded demo data, and a layered backend architecture designed to model real internal business software.
@@ -195,13 +208,22 @@ Demo login accounts:
 - `admin@minierp.local` / `Admin123!`
 - `warehouse@minierp.local` / `Warehouse123!`
 
+Suggested evaluator flow:
+
+- sign in as `admin@minierp.local`
+- review dashboard KPIs
+- inspect items and suppliers
+- open purchase orders and receive stock
+- confirm the resulting inventory and report changes
+- check audit logs for traceability
+
 ## Setup Instructions
 
 ### Prerequisites
 
 Install:
 
-- `.NET 9 SDK`
+- `.NET 10 SDK` or the SDK pinned in `backend/global.json`
 - `Node.js`
 - `PostgreSQL 16`
 
@@ -211,11 +233,21 @@ Optional:
 
 ### Quick Start
 
-1. Start PostgreSQL
-2. Run the backend API
-3. Run the frontend dev server
-4. Open `http://localhost:5173`
-5. Sign in with `admin@minierp.local` / `Admin123!`
+1. Copy the example environment files
+2. Start PostgreSQL
+3. Run the backend API
+4. Run the frontend dev server
+5. Open `http://localhost:5173`
+6. Sign in with `admin@minierp.local` / `Admin123!`
+
+Create local environment files:
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+```
+
+The committed example values are intentionally for local development only. Do not reuse them outside a local machine or CI environment you control.
 
 ### Local Development
 
@@ -269,6 +301,7 @@ The repo includes:
 To start with Docker:
 
 ```bash
+cp backend/.env.example backend/.env
 docker compose up --build
 ```
 
@@ -284,15 +317,15 @@ The project uses PostgreSQL with Entity Framework Core.
 
 Current development behavior:
 
-- in `Development`, the backend uses `EnsureCreated()` on startup to create the schema for the local demo database
+- the backend applies EF Core migrations on startup with `MigrateAsync()`
 - seed data is applied through EF Core model seeding
 
 Important note:
 
-- a full production-style migration history is not finalized yet
-- the migrations folder currently needs proper generated migration files if you want a formal migration workflow
+- the initial migration is committed in the repository under `backend/src/MiniErp.Infrastructure/Persistence/Migrations`
+- integration tests require Docker because they use PostgreSQL Testcontainers
 
-Recommended future migration workflow:
+Migration workflow:
 
 ```bash
 dotnet ef migrations add InitialCreate --project backend/src/MiniErp.Infrastructure --startup-project backend/src/MiniErp.Api
@@ -363,6 +396,42 @@ Examples covered:
 - inventory issue and adjustment rules
 - goods receipt workflow
 - reporting behavior
+
+Run the full backend test suite:
+
+```bash
+dotnet test backend/MiniErp.sln --nologo
+```
+
+Run frontend verification:
+
+```bash
+cd frontend
+npm ci
+npm run build
+```
+
+Note: the integration test project starts a real PostgreSQL container. If Docker is not running, those tests will fail fast.
+
+## Demo Deployment Notes
+
+For a recruiter-friendly deployment, keep the operating model simple:
+
+- deploy a single backend API and single frontend app
+- use the seeded demo dataset
+- expose the two demo accounts from this README
+- keep environment configuration to connection string, JWT settings, and frontend API base URL
+- prefer Docker Compose or two small containers over a complex orchestrated setup
+
+If you want a public demo, treat the environment as read-mostly and refresh the database regularly so the walkthrough stays predictable.
+
+## CI
+
+GitHub Actions is configured to:
+
+- restore and build the backend
+- run unit and integration tests
+- install frontend dependencies and build the Vite app
 
 ## Future Improvements
 

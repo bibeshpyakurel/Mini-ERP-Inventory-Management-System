@@ -6,6 +6,15 @@ export const warehouseOptions = [
   },
 ] as const;
 
+export const locationOptions = [
+  {
+    id: "60000000-0000-0000-0000-000000000001",
+    name: "Main Aisle",
+    code: "MAIN-AISLE",
+    warehouseId: "50000000-0000-0000-0000-000000000001",
+  },
+] as const;
+
 export const inventoryItemOptions = [
   {
     id: "70000000-0000-0000-0000-000000000001",

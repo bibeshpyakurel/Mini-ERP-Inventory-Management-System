@@ -3,7 +3,9 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Container,
+  Divider,
   InputAdornment,
   Paper,
   Stack,
@@ -24,13 +26,28 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+const demoAccounts = [
+  {
+    label: "Admin Demo",
+    email: "admin@minierp.local",
+    password: "Admin123!",
+    description: "Full ERP access including audit logs.",
+  },
+  {
+    label: "Warehouse Demo",
+    email: "warehouse@minierp.local",
+    password: "Warehouse123!",
+    description: "Operational flow without admin-only screens.",
+  },
+] as const;
+
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, login } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { control, handleSubmit, setError, formState } = useForm<LoginFormValues>({
+  const { control, handleSubmit, setError, setValue, formState } = useForm<LoginFormValues>({
     defaultValues: {
       email: "admin@minierp.local",
       password: "Admin123!",
@@ -94,16 +111,65 @@ export function LoginPage() {
         <Paper elevation={0} sx={{ p: { xs: 3, md: 5 }, borderRadius: 6 }}>
           <Stack spacing={3}>
             <Box>
+              <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: "wrap" }}>
+                <Chip label="Demo Ready" color="primary" size="small" />
+                <Chip label="Seeded Data" variant="outlined" size="small" />
+              </Stack>
               <Typography variant="overline" sx={{ letterSpacing: 2, color: "primary.main" }}>
                 Mini ERP
               </Typography>
               <Typography variant="h4">Operations Sign In</Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-                Use a seeded account to explore the ERP shell and protected routes.
+                Sign in with a seeded account and you can inspect items, purchasing, inventory,
+                reports, and audit history immediately.
               </Typography>
             </Box>
 
             {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+
+            <Alert severity="info">
+              This build is intentionally demo-friendly: seeded data is already present, workflows are
+              connected, and no extra onboarding is required.
+            </Alert>
+
+            <Stack spacing={1.25}>
+              <Typography variant="subtitle2">Try a demo persona</Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
+                {demoAccounts.map((account) => (
+                  <Paper
+                    key={account.email}
+                    variant="outlined"
+                    sx={{ p: 1.5, flex: 1, borderRadius: 3 }}
+                  >
+                    <Stack spacing={1}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {account.label}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {account.description}
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {account.email}
+                      </Typography>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => {
+                          setValue("email", account.email);
+                          setValue("password", account.password);
+                        }}
+                      >
+                        Use credentials
+                      </Button>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            </Stack>
+
+            <Divider />
 
             <Stack component="form" spacing={2} onSubmit={onSubmit}>
               <AppFormTextField
@@ -138,9 +204,26 @@ export function LoginPage() {
               </Button>
             </Stack>
 
-            <Alert severity="info">
-              Demo account: <strong>admin@minierp.local</strong> / <strong>Admin123!</strong>
-            </Alert>
+            <Paper
+              variant="outlined"
+              sx={{ p: 2, borderRadius: 3, backgroundColor: "rgba(15,82,87,0.02)" }}
+            >
+              <Stack spacing={0.75}>
+                <Typography variant="subtitle2">Suggested 5-minute walkthrough</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  1. Review the dashboard KPIs.
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  2. Open purchase orders and receive stock.
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  3. Inspect inventory balances and transactions.
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  4. Open reports to see low-stock and valuation outputs.
+                </Typography>
+              </Stack>
+            </Paper>
           </Stack>
         </Paper>
       </Container>

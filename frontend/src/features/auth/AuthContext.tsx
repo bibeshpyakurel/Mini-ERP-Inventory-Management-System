@@ -1,7 +1,9 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -31,25 +33,50 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [accessToken, setAccessToken] = useState<string | null>(tokenStorage.get());
+  const [accessToken, setAccessToken] = useState<string | null>(() =>
+    tokenStorage.isExpired() ? null : tokenStorage.get()
+  );
   const [currentUser, setCurrentUser] = useState<CurrentUserResponse | null>(null);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const clearSession = () => {
+  const clearSession = useCallback(() => {
+    if (expiryTimerRef.current) {
+      clearTimeout(expiryTimerRef.current);
+      expiryTimerRef.current = null;
+    }
     tokenStorage.clear();
     setAccessToken(null);
     setCurrentUser(null);
-  };
+  }, []);
+
+  const scheduleExpiry = useCallback((expiresAtUtc: string) => {
+    if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
+    const msUntilExpiry = new Date(expiresAtUtc).getTime() - Date.now();
+    if (msUntilExpiry <= 0) {
+      clearSession();
+      return;
+    }
+    expiryTimerRef.current = setTimeout(() => {
+      clearSession();
+    }, msUntilExpiry);
+  }, [clearSession]);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
       clearSession();
     });
 
+    // Schedule expiry for any token already in storage on mount
+    const expiry = tokenStorage.getExpiry();
+    if (accessToken && expiry) {
+      scheduleExpiry(expiry);
+    }
+
     return () => {
       setUnauthorizedHandler(null);
     };
-  }, []);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -82,8 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: input,
     });
 
-    tokenStorage.set(response.accessToken);
+    tokenStorage.set(response.accessToken, response.expiresAtUtc);
     setAccessToken(response.accessToken);
+    scheduleExpiry(response.expiresAtUtc);
     setCurrentUser({
       userId: response.userId,
       email: response.email,

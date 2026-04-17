@@ -37,7 +37,6 @@ type PurchaseOrderFormValues = z.infer<typeof poFormSchema>;
 
 type PurchaseOrderFormDialogProps = {
   open: boolean;
-  createdByUserId: string;
   isSubmitting: boolean;
   errorMessage?: string | null;
   onClose: () => void;
@@ -60,7 +59,6 @@ const getDefaultValues = (): PurchaseOrderFormValues => ({
 
 export function PurchaseOrderFormDialog({
   open,
-  createdByUserId,
   isSubmitting,
   errorMessage,
   onClose,
@@ -103,7 +101,6 @@ export function PurchaseOrderFormDialog({
     await onSubmit({
       poNumber: parsed.data.poNumber.trim().toUpperCase(),
       supplierId: parsed.data.supplierId,
-      createdByUserId,
       orderDate: new Date(`${parsed.data.orderDate}T00:00:00Z`).toISOString(),
       expectedDate: parsed.data.expectedDate
         ? new Date(`${parsed.data.expectedDate}T00:00:00Z`).toISOString()

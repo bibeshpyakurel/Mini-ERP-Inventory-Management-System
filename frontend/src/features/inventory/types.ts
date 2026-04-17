@@ -62,7 +62,6 @@ export type IssueStockInput = {
   warehouseId: string;
   locationId: string;
   quantity: number;
-  performedByUserId: string;
   referenceType: string;
   referenceId?: string;
   reason: string;
@@ -72,7 +71,6 @@ export type AdjustStockInput = {
   itemId: string;
   warehouseId: string;
   locationId: string;
-  performedByUserId: string;
   quantityDelta: number;
   referenceId?: string;
   reason: string;

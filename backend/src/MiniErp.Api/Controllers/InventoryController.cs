@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniErp.Api.Contracts.Inventory;
 using MiniErp.Api.Middleware;
+using MiniErp.Application.Common.Interfaces;
 using MiniErp.Application.Common.Interfaces.Services;
 using MiniErp.Domain.Enums;
 
@@ -12,7 +13,9 @@ namespace MiniErp.Api.Controllers;
 [ApiExplorerSettings(GroupName = "Inventory")]
 [Produces("application/json")]
 [Authorize]
-public sealed class InventoryController(IInventoryService inventoryService) : ControllerBase
+public sealed class InventoryController(
+    IInventoryService inventoryService,
+    ICurrentUserService currentUserService) : ControllerBase
 {
     /// <summary>
     /// Returns inventory balances across warehouses and locations.
@@ -103,7 +106,7 @@ public sealed class InventoryController(IInventoryService inventoryService) : Co
             request.WarehouseId,
             request.LocationId,
             request.Quantity,
-            request.PerformedByUserId,
+            currentUserService.UserId!.Value,
             request.ReferenceType,
             request.Reason,
             request.ReferenceId,
@@ -140,7 +143,7 @@ public sealed class InventoryController(IInventoryService inventoryService) : Co
             request.LocationId,
             request.QuantityDelta,
             request.Reason,
-            request.PerformedByUserId,
+            currentUserService.UserId!.Value,
             request.ReferenceId,
             cancellationToken);
 

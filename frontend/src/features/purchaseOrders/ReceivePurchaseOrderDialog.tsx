@@ -5,6 +5,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  MenuItem,
   Stack,
   Typography,
 } from "@mui/material";
@@ -12,14 +13,13 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AppFormTextField } from "../../components/AppFormTextField";
-import {
-  defaultLocationId,
-  defaultWarehouseId,
-} from "./constants";
+import { locationOptions, warehouseOptions } from "../inventory/constants";
 import type { PurchaseOrder, ReceivePurchaseOrderInput } from "./types";
 
 const receiveFormSchema = z.object({
   receiptNumber: z.string().trim().min(1, "Receipt number is required.").max(50, "Receipt number must be 50 characters or less."),
+  warehouseId: z.string().uuid("Select a valid warehouse."),
+  locationId: z.string().uuid("Select a valid location."),
   lines: z.array(
     z.object({
       purchaseOrderLineId: z.string().uuid(),
@@ -34,7 +34,6 @@ type ReceiveFormValues = z.infer<typeof receiveFormSchema>;
 type ReceivePurchaseOrderDialogProps = {
   open: boolean;
   purchaseOrder: PurchaseOrder;
-  receivedByUserId: string;
   isSubmitting: boolean;
   errorMessage?: string | null;
   onClose: () => void;
@@ -43,6 +42,8 @@ type ReceivePurchaseOrderDialogProps = {
 
 const getDefaultValues = (purchaseOrder: PurchaseOrder): ReceiveFormValues => ({
   receiptNumber: `GR-${purchaseOrder.poNumber.replace("PO-", "")}`,
+  warehouseId: warehouseOptions[0].id,
+  locationId: locationOptions[0].id,
   lines: purchaseOrder.lines
     .filter((line) => line.receivedQuantity < line.orderedQuantity)
     .map((line) => ({
@@ -55,7 +56,6 @@ const getDefaultValues = (purchaseOrder: PurchaseOrder): ReceiveFormValues => ({
 export function ReceivePurchaseOrderDialog({
   open,
   purchaseOrder,
-  receivedByUserId,
   isSubmitting,
   errorMessage,
   onClose,
@@ -82,6 +82,14 @@ export function ReceivePurchaseOrderDialog({
           setError("receiptNumber", { message: issue.message });
         }
 
+        if (issue.path[0] === "warehouseId") {
+          setError("warehouseId", { message: issue.message });
+        }
+
+        if (issue.path[0] === "locationId") {
+          setError("locationId", { message: issue.message });
+        }
+
         if (
           issue.path[0] === "lines" &&
           typeof issue.path[1] === "number" &&
@@ -96,14 +104,13 @@ export function ReceivePurchaseOrderDialog({
     await onSubmit({
       purchaseOrderId: purchaseOrder.id,
       receiptNumber: parsed.data.receiptNumber.trim().toUpperCase(),
-      receivedByUserId,
       receivedAtUtc: new Date().toISOString(),
       lines: parsed.data.lines.map((line) => ({
         purchaseOrderLineId: line.purchaseOrderLineId,
         itemId: line.itemId,
         receivedQuantity: line.receivedQuantity,
-        warehouseId: defaultWarehouseId,
-        locationId: defaultLocationId,
+        warehouseId: parsed.data.warehouseId,
+        locationId: parsed.data.locationId,
       })),
     });
   });
@@ -115,9 +122,25 @@ export function ReceivePurchaseOrderDialog({
         <Stack spacing={2} sx={{ pt: 1 }}>
           {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
           <Typography variant="body2" color="text.secondary">
-            Enter received quantities for each open line. Warehouse and location use the seeded defaults for now.
+            Enter the receipt number, destination warehouse and location, then received quantities for each open line.
           </Typography>
           <AppFormTextField control={control} name="receiptNumber" label="Receipt number" fullWidth />
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <AppFormTextField control={control} name="warehouseId" label="Warehouse" select fullWidth>
+              {warehouseOptions.map((w) => (
+                <MenuItem key={w.id} value={w.id}>
+                  {w.code} – {w.name}
+                </MenuItem>
+              ))}
+            </AppFormTextField>
+            <AppFormTextField control={control} name="locationId" label="Location" select fullWidth>
+              {locationOptions.map((l) => (
+                <MenuItem key={l.id} value={l.id}>
+                  {l.code} – {l.name}
+                </MenuItem>
+              ))}
+            </AppFormTextField>
+          </Stack>
           <Stack spacing={1.5}>
             {receivableLines.map((line, index) => (
               <Stack key={line.id} direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>

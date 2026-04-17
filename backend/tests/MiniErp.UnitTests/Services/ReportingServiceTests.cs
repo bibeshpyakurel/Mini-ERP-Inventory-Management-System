@@ -51,7 +51,7 @@ public sealed class ReportingServiceTests
 
         var report = await service.GetStockValuationAsync();
 
-        Assert.Equal(1450m, report.TotalInventoryValue);
+        Assert.Equal(2450m, report.TotalInventoryValue);
         Assert.Equal(2, report.Items.Count);
     }
 

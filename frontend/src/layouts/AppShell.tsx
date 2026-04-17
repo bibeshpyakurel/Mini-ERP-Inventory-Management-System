@@ -130,9 +130,14 @@ export function AppShell() {
                 {env.appName}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Internal operations workspace
+                Demo-friendly operations workspace
               </Typography>
             </Box>
+            <Chip
+              label="Seeded demo data"
+              size="small"
+              sx={{ display: { xs: "none", md: "inline-flex" } }}
+            />
           </Stack>
 
           <Stack

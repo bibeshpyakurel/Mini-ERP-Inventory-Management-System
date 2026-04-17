@@ -1,8 +1,10 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MiniErp.Api.Middleware;
@@ -13,6 +15,7 @@ using MiniErp.Infrastructure.Persistence;
 using Serilog;
 using System.Text;
 using System.Reflection;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +32,11 @@ builder.Services.AddFluentValidationAutoValidation(options =>
 });
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>(
+        name: "postgres",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: ["db", "ready"]);
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -48,9 +55,11 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
             "Validation failed",
             "One or more validation errors occurred.",
             context.HttpContext.TraceIdentifier,
-            errors);
+            Type: "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+            Instance: context.HttpContext.Request.Path.Value,
+            Errors: errors);
 
-        return new BadRequestObjectResult(response);
+        return new BadRequestObjectResult(response) { ContentTypes = { "application/problem+json" } };
     };
 });
 
@@ -143,11 +152,10 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    await dbContext.Database.MigrateAsync();
 }
 
 app.UseSerilogRequestLogging();
@@ -187,18 +195,46 @@ app.UseStatusCodePages(async statusCodeContext =>
         _ => "The request could not be completed."
     };
 
-    response.ContentType = "application/json";
+    response.ContentType = "application/problem+json";
     var payload = new ApiErrorResponse(
         response.StatusCode,
         title,
         detail,
-        statusCodeContext.HttpContext.TraceIdentifier);
+        statusCodeContext.HttpContext.TraceIdentifier,
+        Type: $"https://tools.ietf.org/html/rfc9110#section-15.{(response.StatusCode >= 500 ? "6" : "5")}.{response.StatusCode - (response.StatusCode >= 500 ? 499 : 399)}",
+        Instance: statusCodeContext.HttpContext.Request.Path.Value);
 
-    await response.WriteAsJsonAsync(payload);
+    await response.WriteAsJsonAsync(payload, new System.Text.Json.JsonSerializerOptions
+    {
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+    });
 });
 
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+
+        var result = new
+        {
+            status = report.Status.ToString(),
+            duration = report.TotalDuration,
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration = e.Value.Duration,
+                tags = e.Value.Tags
+            })
+        };
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(result,
+            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+    }
+});
 
 app.MapGet("/api/user-context", [Microsoft.AspNetCore.Authorization.Authorize] (ICurrentUserService currentUserService) =>
     Results.Ok(new

@@ -21,5 +21,3 @@ export const supplierOptions = [
   },
 ] as const;
 
-export const defaultWarehouseId = "50000000-0000-0000-0000-000000000001";
-export const defaultLocationId = "60000000-0000-0000-0000-000000000001";

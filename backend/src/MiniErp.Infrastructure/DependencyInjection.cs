@@ -6,6 +6,7 @@ using MiniErp.Application.Common.Interfaces.Repositories;
 using MiniErp.Application.Common.Interfaces.Security;
 using MiniErp.Application.Common.Interfaces.Services;
 using MiniErp.Infrastructure.Auth;
+using MiniErp.Infrastructure.BackgroundJobs;
 using MiniErp.Infrastructure.Persistence;
 using MiniErp.Infrastructure.Persistence.Repositories;
 using MiniErp.Infrastructure.Services;
@@ -47,6 +48,8 @@ public static class DependencyInjection
         services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
         services.AddScoped<IReportingService, ReportingService>();
         services.AddScoped<ISupplierService, SupplierService>();
+
+        services.AddHostedService<LowStockMonitorService>();
 
         return services;
     }

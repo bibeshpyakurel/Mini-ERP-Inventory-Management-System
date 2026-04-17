@@ -32,7 +32,7 @@ services:
       Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
       Jwt__Issuer: ${JWT_ISSUER:-MiniErp}
       Jwt__Audience: ${JWT_AUDIENCE:-MiniErp.Client}
-      Jwt__Key: ${JWT_KEY:-super-secret-development-key-change-me}
+      Jwt__Key: ${JWT_KEY:-local-development-jwt-signing-key-change-before-production}
     ports:
       - "${BACKEND_PORT:-5000}:5000"
     volumes:

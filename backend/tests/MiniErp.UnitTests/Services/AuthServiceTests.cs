@@ -48,7 +48,7 @@ public sealed class AuthServiceTests
             {
                 Issuer = "MiniErp",
                 Audience = "MiniErp.Client",
-                Key = "super-secret-development-key-change-me",
+                Key = "local-development-jwt-signing-key-change-before-production",
                 ExpirationMinutes = 60
             })),
             new AuditLogRepository(dbContext),
@@ -86,7 +86,7 @@ public sealed class AuthServiceTests
             {
                 Issuer = "MiniErp",
                 Audience = "MiniErp.Client",
-                Key = "super-secret-development-key-change-me",
+                Key = "local-development-jwt-signing-key-change-before-production",
                 ExpirationMinutes = 60
             })),
             new AuditLogRepository(dbContext),

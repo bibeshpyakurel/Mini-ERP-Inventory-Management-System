@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using MiniErp.Api.Middleware;
+using MiniErp.IntegrationTests.Infrastructure;
 
 namespace MiniErp.IntegrationTests.Items;
 
-public sealed class ItemsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ItemsEndpointTests : IClassFixture<PostgresWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PostgresWebApplicationFactory _factory;
 
-    public ItemsEndpointTests(WebApplicationFactory<Program> factory)
+    public ItemsEndpointTests(PostgresWebApplicationFactory factory)
     {
         _factory = factory;
     }

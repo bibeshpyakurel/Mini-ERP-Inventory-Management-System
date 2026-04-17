@@ -10,7 +10,6 @@ public sealed class IssueStockRequestValidator : AbstractValidator<IssueStockReq
         RuleFor(x => x.ItemId).NotEmpty().WithMessage("Item is required.");
         RuleFor(x => x.WarehouseId).NotEmpty().WithMessage("Warehouse is required.");
         RuleFor(x => x.LocationId).NotEmpty().WithMessage("Location is required.");
-        RuleFor(x => x.PerformedByUserId).NotEmpty().WithMessage("Performed by user is required.");
         RuleFor(x => x.Quantity).GreaterThan(0).WithMessage("Issue quantity must be greater than 0.");
         RuleFor(x => x.ReferenceType)
             .NotEmpty().WithMessage("Reference type is required.")

@@ -10,6 +10,7 @@ public sealed class InventoryBalance : BaseEntity
     public int QuantityOnHand { get; set; }
     public int QuantityReserved { get; set; }
     public int QuantityAvailable { get; set; }
+    public uint RowVersion { get; set; }
 
     public Item? Item { get; set; }
     public Warehouse? Warehouse { get; set; }

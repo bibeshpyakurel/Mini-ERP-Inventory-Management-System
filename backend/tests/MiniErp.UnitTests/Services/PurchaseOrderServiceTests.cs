@@ -85,6 +85,8 @@ public sealed class PurchaseOrderServiceTests
                 new UpsertPurchaseOrderLineRequest(SeedConstants.TaskChairItemId, 2, 100m)
             });
 
+        dbContext.ChangeTracker.Clear();
+
         var updated = await service.UpdatePurchaseOrderAsync(
             created.Id,
             SeedConstants.AcmeSupplierId,

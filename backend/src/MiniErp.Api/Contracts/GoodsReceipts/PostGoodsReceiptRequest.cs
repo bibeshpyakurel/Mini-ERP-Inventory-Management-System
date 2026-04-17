@@ -24,6 +24,5 @@ namespace MiniErp.Api.Contracts.GoodsReceipts;
 public sealed record PostGoodsReceiptRequest(
     [property: Required] Guid PurchaseOrderId,
     [property: Required, MaxLength(50)] string ReceiptNumber,
-    [property: Required] Guid ReceivedByUserId,
     DateTime? ReceivedAtUtc,
     [property: MinLength(1)] IReadOnlyCollection<PostGoodsReceiptLineRequest> Lines);

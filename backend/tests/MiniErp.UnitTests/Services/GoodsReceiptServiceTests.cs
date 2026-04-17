@@ -21,7 +21,7 @@ public sealed class GoodsReceiptServiceTests
         var poLineId = await dbContext.PurchaseOrderLines.Select(x => x.Id).SingleAsync();
 
         var receipt = await service.ReceiveAgainstPurchaseOrderAsync(
-            SeedConstants.PurchaseOrderId,
+            SeedConstants.ApprovedPurchaseOrderId,
             "GR-1001",
             SeedConstants.WarehouseUserId,
             new DateTime(2026, 4, 1, 15, 0, 0, DateTimeKind.Utc),
@@ -35,7 +35,7 @@ public sealed class GoodsReceiptServiceTests
                     SeedConstants.MainAisleLocationId)
             });
 
-        var purchaseOrder = await dbContext.PurchaseOrders.Include(x => x.Lines).SingleAsync(x => x.Id == SeedConstants.PurchaseOrderId);
+        var purchaseOrder = await dbContext.PurchaseOrders.Include(x => x.Lines).SingleAsync(x => x.Id == SeedConstants.ApprovedPurchaseOrderId);
         var balance = await dbContext.InventoryBalances.SingleAsync(x => x.ItemId == SeedConstants.TaskChairItemId);
         var transaction = await dbContext.InventoryTransactions.SingleAsync();
         var goodsReceipt = await dbContext.GoodsReceipts.Include(x => x.Lines).SingleAsync();
@@ -60,7 +60,7 @@ public sealed class GoodsReceiptServiceTests
         var poLineId = await dbContext.PurchaseOrderLines.Select(x => x.Id).SingleAsync();
 
         await service.ReceiveAgainstPurchaseOrderAsync(
-            SeedConstants.PurchaseOrderId,
+            SeedConstants.ApprovedPurchaseOrderId,
             "GR-1001-PARTIAL",
             SeedConstants.WarehouseUserId,
             DateTime.UtcNow,
@@ -74,7 +74,7 @@ public sealed class GoodsReceiptServiceTests
                     SeedConstants.MainAisleLocationId)
             });
 
-        var purchaseOrder = await dbContext.PurchaseOrders.Include(x => x.Lines).SingleAsync(x => x.Id == SeedConstants.PurchaseOrderId);
+        var purchaseOrder = await dbContext.PurchaseOrders.Include(x => x.Lines).SingleAsync(x => x.Id == SeedConstants.ApprovedPurchaseOrderId);
 
         Assert.Equal(PurchaseOrderStatus.PartiallyReceived, purchaseOrder.Status);
         Assert.Equal(3, purchaseOrder.Lines.Single().ReceivedQuantity);
@@ -91,7 +91,7 @@ public sealed class GoodsReceiptServiceTests
 
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
             service.ReceiveAgainstPurchaseOrderAsync(
-                SeedConstants.PurchaseOrderId,
+                SeedConstants.ApprovedPurchaseOrderId,
                 "GR-1002",
                 SeedConstants.WarehouseUserId,
                 DateTime.UtcNow,
@@ -119,7 +119,7 @@ public sealed class GoodsReceiptServiceTests
 
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
             service.ReceiveAgainstPurchaseOrderAsync(
-                SeedConstants.PurchaseOrderId,
+                SeedConstants.ApprovedPurchaseOrderId,
                 "GR-1003",
                 SeedConstants.WarehouseUserId,
                 DateTime.UtcNow,
@@ -147,7 +147,7 @@ public sealed class GoodsReceiptServiceTests
 
         var exception = await Assert.ThrowsAsync<DomainException>(() =>
             service.ReceiveAgainstPurchaseOrderAsync(
-                SeedConstants.PurchaseOrderId,
+                SeedConstants.ApprovedPurchaseOrderId,
                 "GR-1004",
                 SeedConstants.WarehouseUserId,
                 DateTime.UtcNow,
@@ -267,7 +267,7 @@ public sealed class GoodsReceiptServiceTests
 
         var purchaseOrder = new PurchaseOrder
         {
-            Id = SeedConstants.PurchaseOrderId,
+            Id = SeedConstants.ApprovedPurchaseOrderId,
             PoNumber = "PO-1001",
             SupplierId = SeedConstants.AcmeSupplierId,
             Status = status,
@@ -277,8 +277,8 @@ public sealed class GoodsReceiptServiceTests
 
         var poLine = new PurchaseOrderLine
         {
-            Id = SeedConstants.PurchaseOrderLineId,
-            PurchaseOrderId = SeedConstants.PurchaseOrderId,
+            Id = SeedConstants.ApprovedPurchaseOrderLineId,
+            PurchaseOrderId = SeedConstants.ApprovedPurchaseOrderId,
             ItemId = SeedConstants.TaskChairItemId,
             OrderedQuantity = 5,
             ReceivedQuantity = 0,

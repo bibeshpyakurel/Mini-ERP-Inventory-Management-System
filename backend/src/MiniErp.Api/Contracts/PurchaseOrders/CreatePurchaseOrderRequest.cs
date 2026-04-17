@@ -23,7 +23,6 @@ namespace MiniErp.Api.Contracts.PurchaseOrders;
 public sealed record CreatePurchaseOrderRequest(
     [property: Required, MaxLength(50)] string PoNumber,
     [property: Required] Guid SupplierId,
-    [property: Required] Guid CreatedByUserId,
     [property: Required] DateTime OrderDate,
     DateTime? ExpectedDate,
     [property: MinLength(1)] IReadOnlyCollection<PurchaseOrderLineRequest> Lines);

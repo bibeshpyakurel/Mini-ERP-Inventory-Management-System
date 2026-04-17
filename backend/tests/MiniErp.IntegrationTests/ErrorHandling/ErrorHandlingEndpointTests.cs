@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using MiniErp.Api.Middleware;
+using MiniErp.IntegrationTests.Infrastructure;
 
 namespace MiniErp.IntegrationTests.ErrorHandling;
 
-public sealed class ErrorHandlingEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ErrorHandlingEndpointTests : IClassFixture<PostgresWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PostgresWebApplicationFactory _factory;
 
-    public ErrorHandlingEndpointTests(WebApplicationFactory<Program> factory)
+    public ErrorHandlingEndpointTests(PostgresWebApplicationFactory factory)
     {
         _factory = factory;
     }

@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using MiniErp.Domain.Common;
 using MiniErp.Domain.Entities;
 using MiniErp.Domain.Enums;
 using MiniErp.Infrastructure.Persistence;
 using MiniErp.Infrastructure.Persistence.Repositories;
-using MiniErp.Infrastructure.Services;
 using MiniErp.Infrastructure.Persistence.Seeding;
+using MiniErp.Infrastructure.Services;
 
 namespace MiniErp.UnitTests.Services;
 

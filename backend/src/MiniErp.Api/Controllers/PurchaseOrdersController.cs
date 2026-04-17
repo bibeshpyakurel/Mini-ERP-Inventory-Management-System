@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniErp.Api.Contracts.PurchaseOrders;
 using MiniErp.Api.Middleware;
+using MiniErp.Application.Common.Interfaces;
 using MiniErp.Application.Common.Interfaces.Services;
 using MiniErp.Domain.Enums;
 
@@ -12,7 +13,9 @@ namespace MiniErp.Api.Controllers;
 [ApiExplorerSettings(GroupName = "Purchase Orders")]
 [Produces("application/json")]
 [Authorize]
-public sealed class PurchaseOrdersController(IPurchaseOrderService purchaseOrderService) : ControllerBase
+public sealed class PurchaseOrdersController(
+    IPurchaseOrderService purchaseOrderService,
+    ICurrentUserService currentUserService) : ControllerBase
 {
     /// <summary>
     /// Returns purchase orders filtered by supplier or workflow status.
@@ -61,7 +64,7 @@ public sealed class PurchaseOrdersController(IPurchaseOrderService purchaseOrder
         var purchaseOrder = await purchaseOrderService.CreatePurchaseOrderAsync(
             request.PoNumber,
             request.SupplierId,
-            request.CreatedByUserId,
+            currentUserService.UserId!.Value,
             request.OrderDate,
             request.ExpectedDate,
             request.Lines.Select(x => new UpsertPurchaseOrderLineRequest(x.ItemId, x.OrderedQuantity, x.UnitCost)).ToArray(),

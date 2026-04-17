@@ -64,7 +64,7 @@ const downloadCsv = (filename: string, rows: string[][]) => {
 
 export function InventoryPage() {
   const queryClient = useQueryClient();
-  const { accessToken, currentUser, primaryRole } = useAuth();
+  const { accessToken, primaryRole } = useAuth();
   const [view, setView] = useState<InventoryView>("balances");
   const [itemFilter, setItemFilter] = useState(ALL_ITEMS);
   const [warehouseFilter, setWarehouseFilter] = useState(ALL_WAREHOUSES);
@@ -539,35 +539,29 @@ export function InventoryPage() {
         </Stack>
       </PageSection>
 
-      {currentUser?.userId ? (
-        <>
-          <IssueStockDialog
-            open={issueOpen}
-            balance={selectedBalance}
-            performedByUserId={currentUser.userId}
-            isSubmitting={issueMutation.isPending}
-            errorMessage={issueError}
-            onClose={() => {
-              setIssueOpen(false);
-              setIssueError(null);
-            }}
-            onSubmit={handleIssue}
-          />
+      <IssueStockDialog
+        open={issueOpen}
+        balance={selectedBalance}
+        isSubmitting={issueMutation.isPending}
+        errorMessage={issueError}
+        onClose={() => {
+          setIssueOpen(false);
+          setIssueError(null);
+        }}
+        onSubmit={handleIssue}
+      />
 
-          <AdjustStockDialog
-            open={adjustOpen}
-            balance={selectedBalance}
-            performedByUserId={currentUser.userId}
-            isSubmitting={adjustMutation.isPending}
-            errorMessage={adjustError}
-            onClose={() => {
-              setAdjustOpen(false);
-              setAdjustError(null);
-            }}
-            onSubmit={handleAdjust}
-          />
-        </>
-      ) : null}
+      <AdjustStockDialog
+        open={adjustOpen}
+        balance={selectedBalance}
+        isSubmitting={adjustMutation.isPending}
+        errorMessage={adjustError}
+        onClose={() => {
+          setAdjustOpen(false);
+          setAdjustError(null);
+        }}
+        onSubmit={handleAdjust}
+      />
     </Stack>
   );
 }

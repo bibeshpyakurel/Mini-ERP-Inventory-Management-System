@@ -23,7 +23,7 @@ import { useState } from "react";
 export function PurchaseOrderDetailPage() {
   const { purchaseOrderId = "" } = useParams();
   const queryClient = useQueryClient();
-  const { accessToken, currentUser, primaryRole } = useAuth();
+  const { accessToken, primaryRole } = useAuth();
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [receiveError, setReceiveError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -229,7 +229,6 @@ export function PurchaseOrderDetailPage() {
           <ReceivePurchaseOrderDialog
             open={receiveOpen}
             purchaseOrder={purchaseOrderQuery.data}
-            receivedByUserId={currentUser?.userId ?? ""}
             isSubmitting={receiveMutation.isPending}
             errorMessage={receiveError}
             onClose={() => {

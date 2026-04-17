@@ -36,7 +36,6 @@ export type PurchaseOrderLineInput = {
 export type CreatePurchaseOrderInput = {
   poNumber: string;
   supplierId: string;
-  createdByUserId: string;
   orderDate: string;
   expectedDate?: string;
   lines: PurchaseOrderLineInput[];
@@ -45,7 +44,6 @@ export type CreatePurchaseOrderInput = {
 export type ReceivePurchaseOrderInput = {
   purchaseOrderId: string;
   receiptNumber: string;
-  receivedByUserId: string;
   receivedAtUtc?: string;
   lines: {
     purchaseOrderLineId: string;

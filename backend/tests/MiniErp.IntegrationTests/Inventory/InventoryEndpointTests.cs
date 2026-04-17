@@ -1,13 +1,13 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
+using MiniErp.IntegrationTests.Infrastructure;
 
 namespace MiniErp.IntegrationTests.Inventory;
 
-public sealed class InventoryEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class InventoryEndpointTests : IClassFixture<PostgresWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PostgresWebApplicationFactory _factory;
 
-    public InventoryEndpointTests(WebApplicationFactory<Program> factory)
+    public InventoryEndpointTests(PostgresWebApplicationFactory factory)
     {
         _factory = factory;
     }

@@ -11,6 +11,8 @@ public sealed class InventoryBalanceConfiguration : IEntityTypeConfiguration<Inv
         builder.ToTable("inventory_balances");
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.RowVersion).IsRowVersion();
+
         builder.HasIndex(x => new { x.ItemId, x.WarehouseId, x.LocationId }).IsUnique();
 
         builder.HasOne(x => x.Item)

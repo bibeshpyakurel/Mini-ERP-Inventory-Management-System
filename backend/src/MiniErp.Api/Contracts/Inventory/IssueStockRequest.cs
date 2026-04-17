@@ -21,7 +21,6 @@ public sealed record IssueStockRequest(
     [property: Required] Guid WarehouseId,
     [property: Required] Guid LocationId,
     [property: Range(1, int.MaxValue)] int Quantity,
-    [property: Required] Guid PerformedByUserId,
     [property: Required, MaxLength(50)] string ReferenceType,
     Guid? ReferenceId,
     [property: Required, MaxLength(500)] string Reason);

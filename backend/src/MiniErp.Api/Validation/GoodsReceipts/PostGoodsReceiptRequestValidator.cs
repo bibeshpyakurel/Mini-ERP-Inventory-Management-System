@@ -11,7 +11,6 @@ public sealed class PostGoodsReceiptRequestValidator : AbstractValidator<PostGoo
         RuleFor(x => x.ReceiptNumber)
             .NotEmpty().WithMessage("Receipt number is required.")
             .MaximumLength(50).WithMessage("Receipt number must be 50 characters or fewer.");
-        RuleFor(x => x.ReceivedByUserId).NotEmpty().WithMessage("Received by user is required.");
         RuleFor(x => x.Lines).NotEmpty().WithMessage("At least one receipt line is required.");
         RuleForEach(x => x.Lines).ChildRules(line =>
         {

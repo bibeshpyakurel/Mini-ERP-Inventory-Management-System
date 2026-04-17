@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using MiniErp.Api.Middleware;
+using MiniErp.IntegrationTests.Infrastructure;
 
 namespace MiniErp.IntegrationTests.Auth;
 
-public sealed class AuthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class AuthEndpointTests : IClassFixture<PostgresWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PostgresWebApplicationFactory _factory;
 
-    public AuthEndpointTests(WebApplicationFactory<Program> factory)
+    public AuthEndpointTests(PostgresWebApplicationFactory factory)
     {
         _factory = factory;
     }

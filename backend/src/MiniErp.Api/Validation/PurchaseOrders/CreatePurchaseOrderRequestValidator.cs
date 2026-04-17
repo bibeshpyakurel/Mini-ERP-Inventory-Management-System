@@ -11,7 +11,6 @@ public sealed class CreatePurchaseOrderRequestValidator : AbstractValidator<Crea
             .NotEmpty().WithMessage("PO number is required.")
             .MaximumLength(50).WithMessage("PO number must be 50 characters or fewer.");
         RuleFor(x => x.SupplierId).NotEmpty().WithMessage("Supplier is required.");
-        RuleFor(x => x.CreatedByUserId).NotEmpty().WithMessage("Created by user is required.");
         RuleFor(x => x.OrderDate).NotEmpty().WithMessage("Order date is required.");
         RuleFor(x => x.Lines).NotEmpty().WithMessage("At least one purchase order line is required.");
         RuleForEach(x => x.Lines).ChildRules(line =>

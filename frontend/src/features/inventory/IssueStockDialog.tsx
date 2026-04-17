@@ -25,7 +25,6 @@ type IssueFormValues = z.infer<typeof issueFormSchema>;
 type IssueStockDialogProps = {
   open: boolean;
   balance: InventoryBalance | null;
-  performedByUserId: string;
   isSubmitting: boolean;
   errorMessage?: string | null;
   onClose: () => void;
@@ -42,7 +41,6 @@ const getDefaultValues = (): IssueFormValues => ({
 export function IssueStockDialog({
   open,
   balance,
-  performedByUserId,
   isSubmitting,
   errorMessage,
   onClose,
@@ -84,7 +82,6 @@ export function IssueStockDialog({
       warehouseId: balance.warehouseId,
       locationId: balance.locationId,
       quantity: parsed.data.quantity,
-      performedByUserId,
       referenceType: parsed.data.referenceType.trim(),
       referenceId: parsed.data.referenceId || undefined,
       reason: parsed.data.reason.trim(),

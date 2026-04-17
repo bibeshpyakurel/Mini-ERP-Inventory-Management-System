@@ -94,10 +94,27 @@ public sealed class PurchaseOrder : BaseEntity
             throw new DomainException("Each item may only appear once on a purchase order.");
         }
 
-        Lines.Clear();
+        var incomingByItemId = materializedLines.ToDictionary(x => x.ItemId);
+        var existingLines = Lines.ToList();
+
+        foreach (var existingLine in existingLines)
+        {
+            if (!incomingByItemId.ContainsKey(existingLine.ItemId))
+            {
+                Lines.Remove(existingLine);
+            }
+        }
 
         foreach (var line in materializedLines)
         {
+            var existingLine = Lines.SingleOrDefault(x => x.ItemId == line.ItemId);
+
+            if (existingLine is not null)
+            {
+                existingLine.UpdateDetails(line.OrderedQuantity, line.UnitCost);
+                continue;
+            }
+
             Lines.Add(PurchaseOrderLine.Create(Id, line.ItemId, line.OrderedQuantity, line.UnitCost));
         }
 

@@ -18,6 +18,16 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         }
     }
 
+    private static readonly Dictionary<int, string> ProblemTypeUris = new()
+    {
+        [StatusCodes.Status400BadRequest]          = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        [StatusCodes.Status401Unauthorized]        = "https://tools.ietf.org/html/rfc9110#section-15.5.2",
+        [StatusCodes.Status403Forbidden]           = "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+        [StatusCodes.Status404NotFound]            = "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+        [StatusCodes.Status409Conflict]            = "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+        [StatusCodes.Status500InternalServerError] = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+    };
+
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         logger.LogError(exception, "Unhandled exception while processing request {Path}", context.Request.Path);
@@ -66,16 +76,22 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
             )
         };
 
-        context.Response.ContentType = "application/json";
+        context.Response.ContentType = "application/problem+json";
         context.Response.StatusCode = statusCode;
+
+        var type = ProblemTypeUris.GetValueOrDefault(statusCode, "https://tools.ietf.org/html/rfc9110");
+        var instance = context.Request.Path.Value;
 
         var response = new ApiErrorResponse(
             statusCode,
             title,
             detail,
             context.TraceIdentifier,
+            type,
+            instance,
             errors);
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response,
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
     }
 }
