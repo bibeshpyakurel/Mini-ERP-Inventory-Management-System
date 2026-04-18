@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-mini_erp}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -24,15 +24,15 @@ services:
     container_name: mini-erp-backend
     restart: unless-stopped
     env_file:
-      - ./backend/.env.example
+      - ./backend/.env
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: ${ASPNETCORE_URLS:-http://0.0.0.0:5000}
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-mini_erp};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-mini_erp};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}
       Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
       Jwt__Issuer: ${JWT_ISSUER:-MiniErp}
       Jwt__Audience: ${JWT_AUDIENCE:-MiniErp.Client}
-      Jwt__Key: ${JWT_KEY:-local-development-jwt-signing-key-change-before-production}
+      Jwt__Key: ${JWT_KEY}
     ports:
       - "${BACKEND_PORT:-5000}:5000"
     volumes:
@@ -50,7 +50,7 @@ services:
     container_name: mini-erp-frontend
     restart: unless-stopped
     env_file:
-      - ./frontend/.env.example
+      - ./frontend/.env
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5000/api}
       VITE_APP_NAME: ${VITE_APP_NAME:-Mini ERP Inventory Management System}
