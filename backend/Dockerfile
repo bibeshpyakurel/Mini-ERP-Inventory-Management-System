@@ -1,18 +1,22 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0
-
+# Stage 1: Build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS builder
 WORKDIR /app
 
-COPY backend/src/MiniErp.Domain/MiniErp.Domain.csproj backend/src/MiniErp.Domain/
-COPY backend/src/MiniErp.Application/MiniErp.Application.csproj backend/src/MiniErp.Application/
-COPY backend/src/MiniErp.Infrastructure/MiniErp.Infrastructure.csproj backend/src/MiniErp.Infrastructure/
-COPY backend/src/MiniErp.Api/MiniErp.Api.csproj backend/src/MiniErp.Api/
+COPY backend/src/MiniErp.Domain/MiniErp.Domain.csproj src/MiniErp.Domain/
+COPY backend/src/MiniErp.Application/MiniErp.Application.csproj src/MiniErp.Application/
+COPY backend/src/MiniErp.Infrastructure/MiniErp.Infrastructure.csproj src/MiniErp.Infrastructure/
+COPY backend/src/MiniErp.Api/MiniErp.Api.csproj src/MiniErp.Api/
 
-RUN dotnet restore backend/src/MiniErp.Api/MiniErp.Api.csproj
+RUN dotnet restore src/MiniErp.Api/MiniErp.Api.csproj
 
-COPY backend ./backend
+COPY backend/src ./src
 
-WORKDIR /app/backend/src/MiniErp.Api
+RUN dotnet publish src/MiniErp.Api/MiniErp.Api.csproj -c Release -o /app/publish
 
+# Stage 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
+WORKDIR /app
+COPY --from=builder /app/publish .
 EXPOSE 5000
-
-CMD ["dotnet", "run", "--project", "MiniErp.Api.csproj", "--urls", "http://0.0.0.0:5000"]
+ENV ASPNETCORE_URLS=http://0.0.0.0:5000
+CMD ["dotnet", "MiniErp.Api.dll"]
