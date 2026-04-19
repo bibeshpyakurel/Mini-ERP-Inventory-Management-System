@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using ClearErp.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 
@@ -9,7 +10,7 @@ namespace ClearErp.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Spins up a real PostgreSQL container for each test class that uses it.
-/// Migrations and seed data are applied automatically via Program.cs MigrateAsync().
+/// Migrations and seed data are applied automatically.
 /// </summary>
 public sealed class PostgresWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -33,6 +34,8 @@ public sealed class PostgresWebApplicationFactory : WebApplicationFactory<Progra
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseEnvironment("Testing");
+
         builder.ConfigureServices(services =>
         {
             // Replace the production DbContext registration with one that points at the container.
@@ -45,5 +48,17 @@ public sealed class PostgresWebApplicationFactory : WebApplicationFactory<Progra
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(_postgres.GetConnectionString()));
         });
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+
+        // Run migrations after DI is configured with the test database
+        using var scope = host.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        dbContext.Database.Migrate();
+
+        return host;
     }
 }
