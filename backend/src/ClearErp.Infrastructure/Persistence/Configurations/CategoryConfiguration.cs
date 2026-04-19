@@ -11,6 +11,6 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.ToTable("categories");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).HasMaxLength(100).IsRequired();
-        builder.HasIndex(x => x.Name).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
     }
 }

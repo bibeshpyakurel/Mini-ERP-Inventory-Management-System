@@ -4,5 +4,5 @@ namespace ClearErp.Application.Common.Interfaces.Security;
 
 public interface IJwtTokenGenerator
 {
-    (string AccessToken, DateTime ExpiresAtUtc) GenerateToken(User user, IReadOnlyCollection<string> roles);
+    (string AccessToken, DateTime ExpiresAtUtc) GenerateToken(User user, IReadOnlyCollection<string> roles, Guid tenantId, string industry);
 }

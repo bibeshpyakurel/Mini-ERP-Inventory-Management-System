@@ -2,7 +2,7 @@ using ClearErp.Domain.Common;
 
 namespace ClearErp.Domain.Entities;
 
-public sealed class Supplier : BaseEntity
+public sealed class Supplier : TenantEntity
 {
     public string Name { get; set; } = string.Empty;
     public string ContactName { get; set; } = string.Empty;

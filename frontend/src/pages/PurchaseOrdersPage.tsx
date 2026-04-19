@@ -15,13 +15,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { ApiClientError } from "../api/client";
+import { useDemo } from "../features/demo/DemoContext";
 import { AppDataTable, type TableColumn } from "../components/AppDataTable";
 import { PageSection } from "../components/PageSection";
 import { useAuth } from "../features/auth/AuthContext";
 import { purchaseOrdersApi } from "../features/purchaseOrders/api";
-import { purchaseOrderStatusOptions, supplierOptions } from "../features/purchaseOrders/constants";
+import { suppliersApi } from "../features/suppliers/api";
+import { itemsApi } from "../features/items/api";
+import { purchaseOrderStatusOptions } from "../features/purchaseOrders/constants";
 import { PurchaseOrderFormDialog } from "../features/purchaseOrders/PurchaseOrderFormDialog";
 import type { CreatePurchaseOrderInput, PurchaseOrder, PurchaseOrderFilters } from "../features/purchaseOrders/types";
+import type { Supplier } from "../features/suppliers/types";
+import type { Item } from "../features/items/types";
 
 const ALL_SUPPLIERS = "all";
 const ALL_STATUSES = "all";
@@ -44,6 +49,7 @@ const statusChipColor = (status: string) => {
 export function PurchaseOrdersPage() {
   const queryClient = useQueryClient();
   const { accessToken, primaryRole } = useAuth();
+  const { notifyWrite } = useDemo();
   const [supplierFilter, setSupplierFilter] = useState(ALL_SUPPLIERS);
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -60,27 +66,40 @@ export function PurchaseOrdersPage() {
   const purchaseOrdersQuery = useQuery({
     queryKey: ["purchase-orders", filters],
     queryFn: async () => {
-      if (!accessToken) {
-        return [] as PurchaseOrder[];
-      }
-
+      if (!accessToken) return [] as PurchaseOrder[];
       return purchaseOrdersApi.list(accessToken, filters);
+    },
+    enabled: Boolean(accessToken),
+  });
+
+  const suppliersQuery = useQuery({
+    queryKey: ["suppliers-all"],
+    queryFn: async () => {
+      if (!accessToken) return [] as Supplier[];
+      return suppliersApi.list(accessToken, { isActive: true });
+    },
+    enabled: Boolean(accessToken),
+  });
+
+  const itemsQuery = useQuery({
+    queryKey: ["items-all"],
+    queryFn: async () => {
+      if (!accessToken) return [] as Item[];
+      return itemsApi.list(accessToken, { isActive: true });
     },
     enabled: Boolean(accessToken),
   });
 
   const createPurchaseOrderMutation = useMutation({
     mutationFn: async (input: CreatePurchaseOrderInput) => {
-      if (!accessToken) {
-        throw new Error("Missing access token.");
-      }
-
+      if (!accessToken) throw new Error("Missing access token.");
       return purchaseOrdersApi.create(accessToken, input);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
       setDialogOpen(false);
       setFormError(null);
+      notifyWrite();
     },
   });
 
@@ -89,7 +108,6 @@ export function PurchaseOrdersPage() {
 
   const handleCreate = async (values: CreatePurchaseOrderInput) => {
     setFormError(null);
-
     try {
       await createPurchaseOrderMutation.mutateAsync(values);
     } catch (error) {
@@ -97,7 +115,6 @@ export function PurchaseOrdersPage() {
         setFormError(error.message);
         return;
       }
-
       setFormError("Unable to create the purchase order right now.");
     }
   };
@@ -148,6 +165,8 @@ export function PurchaseOrdersPage() {
     },
   ];
 
+  const suppliers = suppliersQuery.data ?? [];
+
   return (
     <Stack spacing={3}>
       <PageSection
@@ -172,7 +191,7 @@ export function PurchaseOrdersPage() {
               sx={{ minWidth: 260 }}
             >
               <MenuItem value={ALL_SUPPLIERS}>All suppliers</MenuItem>
-              {supplierOptions.map((supplier) => (
+              {suppliers.map((supplier) => (
                 <MenuItem key={supplier.id} value={supplier.id}>
                   {supplier.name}
                 </MenuItem>
@@ -222,6 +241,8 @@ export function PurchaseOrdersPage() {
         open={dialogOpen}
         isSubmitting={createPurchaseOrderMutation.isPending}
         errorMessage={formError}
+        suppliers={suppliers}
+        items={itemsQuery.data ?? []}
         onClose={() => {
           setDialogOpen(false);
           setFormError(null);

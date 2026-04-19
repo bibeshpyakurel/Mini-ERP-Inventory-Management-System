@@ -2,20 +2,30 @@ import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
-import SwapHorizRoundedIcon from "@mui/icons-material/SwapHorizRounded";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import AdminPanelSettingsRoundedIcon from "@mui/icons-material/AdminPanelSettingsRounded";
+import WarehouseRoundedIcon from "@mui/icons-material/WarehouseRounded";
+import RestartAltRoundedIcon from "@mui/icons-material/RestartAltRounded";
 import {
   AppBar,
   Box,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Drawer,
   IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Menu,
-  MenuItem,
+  Snackbar,
+  Alert,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Toolbar,
   Tooltip,
   Typography,
@@ -29,14 +39,11 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { env } from "../app/env";
 import { navigationItems } from "../app/navigation";
 import { useAuth } from "../features/auth/AuthContext";
+import { useDemo } from "../features/demo/DemoContext";
 import { useThemeMode } from "../features/theme/ThemeContext";
+import { apiClient } from "../api/client";
 
 const drawerWidth = 280;
-
-const demoPersonas = [
-  { label: "Admin", email: "admin@clearerp.local", password: "Admin123!", role: "Admin" },
-  { label: "Warehouse", email: "warehouse@clearerp.local", password: "Warehouse123!", role: "Warehouse" },
-];
 
 function SidebarContent({
   primaryRole,
@@ -109,21 +116,34 @@ export function AppShell() {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { currentUser, primaryRole, login, logout } = useAuth();
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const { currentUser, primaryRole, logout, switchRole, isSwitchingRole, accessToken } = useAuth();
   const { mode, toggleMode } = useThemeMode();
+  const { snackbarOpen, closeSnackbar, notifyWrite } = useDemo();
 
-  const [switchAnchor, setSwitchAnchor] = useState<null | HTMLElement>(null);
-  const [switching, setSwitching] = useState(false);
+  const currentRole = primaryRole?.toLowerCase().includes("admin") ? "admin" : "warehouse";
 
-  const otherPersonas = demoPersonas.filter((p) => p.role !== primaryRole);
+  const handleRoleChange = async (_: React.MouseEvent<HTMLElement>, newRole: "admin" | "warehouse" | null) => {
+    if (newRole && newRole !== currentRole) {
+      await switchRole(newRole);
+    }
+  };
 
-  const handleSwitch = async (email: string, password: string) => {
-    setSwitchAnchor(null);
-    setSwitching(true);
+  const handleResetDemo = async () => {
+    setIsResetting(true);
     try {
-      await login({ email, password });
+      await apiClient.request("/admin/reset-demo", {
+        method: "POST",
+        token: accessToken ?? undefined,
+      });
+      notifyWrite();
+      setResetDialogOpen(false);
+      window.location.reload();
+    } catch {
+      // Error handled by API client
     } finally {
-      setSwitching(false);
+      setIsResetting(false);
     }
   };
 
@@ -164,7 +184,7 @@ export function AppShell() {
               </Typography>
             </Box>
             <Chip
-              label="Seeded demo data"
+              label="Demo"
               size="small"
               sx={{ display: { xs: "none", md: "inline-flex" } }}
             />
@@ -175,12 +195,39 @@ export function AppShell() {
             spacing={1.25}
             alignItems={{ xs: "flex-end", sm: "center" }}
           >
-            <Chip
-              label={primaryRole ?? "User"}
-              color="primary"
-              variant="outlined"
+            {/* Role Toggle */}
+            <ToggleButtonGroup
+              value={currentRole}
+              exclusive
+              onChange={handleRoleChange}
               size="small"
-            />
+              disabled={isSwitchingRole}
+              sx={{ height: 32 }}
+            >
+              <ToggleButton value="admin" sx={{ px: 1.5 }}>
+                <Tooltip title="Switch to Admin">
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <AdminPanelSettingsRoundedIcon fontSize="small" />
+                    <Typography variant="caption" sx={{ display: { xs: "none", md: "block" } }}>
+                      Admin
+                    </Typography>
+                  </Stack>
+                </Tooltip>
+              </ToggleButton>
+              <ToggleButton value="warehouse" sx={{ px: 1.5 }}>
+                <Tooltip title="Switch to Warehouse">
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <WarehouseRoundedIcon fontSize="small" />
+                    <Typography variant="caption" sx={{ display: { xs: "none", md: "block" } }}>
+                      Warehouse
+                    </Typography>
+                  </Stack>
+                </Tooltip>
+              </ToggleButton>
+            </ToggleButtonGroup>
+
+            {isSwitchingRole && <CircularProgress size={20} />}
+
             <Typography
               variant="body2"
               color="text.secondary"
@@ -190,44 +237,18 @@ export function AppShell() {
               {currentUser?.email ?? "Signed in"}
             </Typography>
 
-            {/* Persona switcher */}
-            <Tooltip title="Switch demo persona">
-              <span>
-                <IconButton
-                  size="small"
-                  color="inherit"
-                  disabled={switching}
-                  onClick={(e) => setSwitchAnchor(e.currentTarget)}
-                >
-                  {switching ? <CircularProgress size={18} color="inherit" /> : <SwapHorizRoundedIcon />}
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Menu
-              anchorEl={switchAnchor}
-              open={Boolean(switchAnchor)}
-              onClose={() => setSwitchAnchor(null)}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
-            >
-              <Typography variant="caption" color="text.secondary" sx={{ px: 2, pt: 1, display: "block" }}>
-                Switch to
-              </Typography>
-              {otherPersonas.map((p) => (
-                <MenuItem key={p.email} onClick={() => handleSwitch(p.email, p.password)}>
-                  <Stack>
-                    <Typography variant="body2" fontWeight={600}>{p.label}</Typography>
-                    <Typography variant="caption" color="text.secondary">{p.email}</Typography>
-                  </Stack>
-                </MenuItem>
-              ))}
-            </Menu>
-
             <Tooltip title={mode === "light" ? "Switch to dark mode" : "Switch to light mode"}>
               <IconButton onClick={toggleMode} color="inherit" size="small">
                 {mode === "light" ? <DarkModeRoundedIcon /> : <LightModeRoundedIcon />}
               </IconButton>
             </Tooltip>
+
+            <Tooltip title="Reset demo data">
+              <IconButton onClick={() => setResetDialogOpen(true)} color="inherit" size="small">
+                <RestartAltRoundedIcon />
+              </IconButton>
+            </Tooltip>
+
             <Button
               color="inherit"
               startIcon={<LogoutRoundedIcon />}
@@ -262,11 +283,79 @@ export function AppShell() {
           ml: { lg: `${drawerWidth}px` },
           px: { xs: 2, md: 4 },
           pt: { xs: 12, md: 14 },
-          pb: 4,
+          pb: { xs: 10, md: 10 },
         }}
       >
         <Outlet />
       </Box>
+
+      {/* Demo mode footer bar */}
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          left: { lg: `${drawerWidth}px` },
+          right: 0,
+          zIndex: 1100,
+          px: { xs: 2, md: 4 },
+          py: 0.75,
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          backdropFilter: "blur(12px)",
+          backgroundColor: mode === "dark"
+            ? "rgba(20, 14, 4, 0.82)"
+            : "rgba(255, 250, 240, 0.88)",
+          borderTop: mode === "dark"
+            ? "1px solid rgba(180, 120, 30, 0.22)"
+            : "1px solid rgba(180, 130, 0, 0.18)",
+        }}
+      >
+        <InfoOutlinedIcon
+          sx={{
+            fontSize: 14,
+            flexShrink: 0,
+            color: mode === "dark" ? "rgba(245,200,66,0.7)" : "#92640a",
+          }}
+        />
+        <Typography
+          variant="caption"
+          sx={{ color: mode === "dark" ? "rgba(245,200,66,0.75)" : "#7a5200", lineHeight: 1 }}
+        >
+          <strong>Note:</strong> Demo data resets on sign-out or after 60 minutes.
+        </Typography>
+      </Box>
+
+      {/* Write-operation reminder Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        sx={{ mb: 4 }}
+      >
+        <Alert onClose={closeSnackbar} severity="info" sx={{ width: "100%" }}>
+          Change saved — remember, demo data resets on sign-out.
+        </Alert>
+      </Snackbar>
+
+      {/* Reset confirmation dialog */}
+      <Dialog open={resetDialogOpen} onClose={() => setResetDialogOpen(false)}>
+        <DialogTitle>Reset Demo Data?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This will restore all data to its original demo state. Any changes you made will be lost.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetDialogOpen(false)} disabled={isResetting}>
+            Cancel
+          </Button>
+          <Button onClick={handleResetDemo} color="primary" variant="contained" disabled={isResetting}>
+            {isResetting ? "Resetting..." : "Reset"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

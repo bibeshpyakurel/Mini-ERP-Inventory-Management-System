@@ -3,7 +3,7 @@ using ClearErp.Domain.Enums;
 
 namespace ClearErp.Domain.Entities;
 
-public sealed class StockAdjustment : BaseEntity
+public sealed class StockAdjustment : TenantEntity
 {
     public Guid ItemId { get; set; }
     public Guid WarehouseId { get; set; }

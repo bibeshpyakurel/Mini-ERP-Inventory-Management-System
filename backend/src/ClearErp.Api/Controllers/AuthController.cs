@@ -29,7 +29,7 @@ public sealed class AuthController(IAuthService authService, ICurrentUserService
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken cancellationToken)
     {
-        var result = await authService.LoginAsync(request.Email, request.Password, cancellationToken);
+        var result = await authService.LoginAsync(request.Email, request.Password, request.TenantSlug, cancellationToken);
 
         return Ok(new AuthResponse(
             result.AccessToken,
@@ -37,7 +37,10 @@ public sealed class AuthController(IAuthService authService, ICurrentUserService
             result.UserId,
             result.Email,
             result.FullName,
-            result.Roles));
+            result.Roles,
+            result.TenantId,
+            result.TenantName,
+            result.Industry));
     }
 
     /// <summary>

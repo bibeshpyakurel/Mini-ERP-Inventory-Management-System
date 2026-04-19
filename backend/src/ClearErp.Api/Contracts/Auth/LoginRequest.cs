@@ -4,8 +4,9 @@ namespace ClearErp.Api.Contracts.Auth;
 /// Login request for retrieving a JWT access token.
 /// Example payload:
 /// {
-///   "email": "admin@clearerp.local",
-///   "password": "Admin123!"
+///   "email": "admin@clearfurniture.local",
+///   "password": "Admin123!",
+///   "tenantSlug": "furniture"
 /// }
 /// </summary>
-public sealed record LoginRequest(string Email, string Password);
+public sealed record LoginRequest(string Email, string Password, string TenantSlug);

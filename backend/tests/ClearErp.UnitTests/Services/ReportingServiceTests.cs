@@ -3,6 +3,7 @@ using ClearErp.Domain.Entities;
 using ClearErp.Domain.Enums;
 using ClearErp.Infrastructure.Persistence;
 using ClearErp.Infrastructure.Persistence.Seeding;
+using ClearErp.Application.Common.Interfaces;
 using ClearErp.Infrastructure.Services;
 
 namespace ClearErp.UnitTests.Services;
@@ -93,7 +94,7 @@ public sealed class ReportingServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, new NullTenantContext());
     }
 
     private static void SeedReportingData(ApplicationDbContext dbContext)
@@ -227,5 +228,10 @@ public sealed class ReportingServiceTests
         });
 
         return purchaseOrder;
+    }
+
+    private sealed class NullTenantContext : ITenantContext
+    {
+        public Guid? TenantId => null;
     }
 }

@@ -3,7 +3,7 @@ using ClearErp.Domain.Enums;
 
 namespace ClearErp.Domain.Entities;
 
-public sealed class PurchaseOrder : BaseEntity
+public sealed class PurchaseOrder : TenantEntity
 {
     public string PoNumber { get; set; } = string.Empty;
     public Guid SupplierId { get; set; }

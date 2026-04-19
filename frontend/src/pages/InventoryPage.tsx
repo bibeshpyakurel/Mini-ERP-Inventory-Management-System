@@ -17,16 +17,15 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ApiClientError } from "../api/client";
+import { useDemo } from "../features/demo/DemoContext";
 import { AppDataTable, type TableColumn } from "../components/AppDataTable";
 import { PageSection } from "../components/PageSection";
 import { useAuth } from "../features/auth/AuthContext";
 import { inventoryApi } from "../features/inventory/api";
+import { warehousesApi, type WarehouseOption } from "../features/inventory/warehousesApi";
+import { itemsApi } from "../features/items/api";
 import { AdjustStockDialog } from "../features/inventory/AdjustStockDialog";
-import {
-  inventoryItemOptions,
-  inventoryTransactionTypes,
-  warehouseOptions,
-} from "../features/inventory/constants";
+import { inventoryTransactionTypes } from "../features/inventory/constants";
 import { IssueStockDialog } from "../features/inventory/IssueStockDialog";
 import type {
   AdjustStockInput,
@@ -37,6 +36,7 @@ import type {
   IssueStockInput,
   LowStockItem,
 } from "../features/inventory/types";
+import type { Item } from "../features/items/types";
 
 type InventoryView = "balances" | "transactions";
 
@@ -65,6 +65,7 @@ const downloadCsv = (filename: string, rows: string[][]) => {
 export function InventoryPage() {
   const queryClient = useQueryClient();
   const { accessToken, primaryRole } = useAuth();
+  const { notifyWrite } = useDemo();
   const [view, setView] = useState<InventoryView>("balances");
   const [itemFilter, setItemFilter] = useState(ALL_ITEMS);
   const [warehouseFilter, setWarehouseFilter] = useState(ALL_WAREHOUSES);
@@ -100,13 +101,28 @@ export function InventoryPage() {
     [fromDate, itemFilter, toDate, transactionTypeFilter, warehouseFilter],
   );
 
+  const itemsQuery = useQuery({
+    queryKey: ["items-all"],
+    queryFn: async () => {
+      if (!accessToken) return [] as Item[];
+      return itemsApi.list(accessToken, {});
+    },
+    enabled: Boolean(accessToken),
+  });
+
+  const warehousesQuery = useQuery({
+    queryKey: ["warehouses"],
+    queryFn: async () => {
+      if (!accessToken) return [] as WarehouseOption[];
+      return warehousesApi.list(accessToken);
+    },
+    enabled: Boolean(accessToken),
+  });
+
   const balancesQuery = useQuery({
     queryKey: ["inventory-balances", balanceFilters],
     queryFn: async () => {
-      if (!accessToken) {
-        return [] as InventoryBalance[];
-      }
-
+      if (!accessToken) return [] as InventoryBalance[];
       return inventoryApi.getBalances(accessToken, balanceFilters);
     },
     enabled: Boolean(accessToken),
@@ -115,10 +131,7 @@ export function InventoryPage() {
   const transactionsQuery = useQuery({
     queryKey: ["inventory-transactions", transactionFilters],
     queryFn: async () => {
-      if (!accessToken) {
-        return [] as InventoryTransaction[];
-      }
-
+      if (!accessToken) return [] as InventoryTransaction[];
       return inventoryApi.getTransactions(accessToken, transactionFilters);
     },
     enabled: Boolean(accessToken),
@@ -127,10 +140,7 @@ export function InventoryPage() {
   const lowStockQuery = useQuery({
     queryKey: ["inventory-low-stock"],
     queryFn: async () => {
-      if (!accessToken) {
-        return [] as LowStockItem[];
-      }
-
+      if (!accessToken) return [] as LowStockItem[];
       return inventoryApi.getLowStock(accessToken);
     },
     enabled: Boolean(accessToken),
@@ -146,16 +156,14 @@ export function InventoryPage() {
 
   const issueMutation = useMutation({
     mutationFn: async (input: IssueStockInput) => {
-      if (!accessToken) {
-        throw new Error("Missing access token.");
-      }
-
+      if (!accessToken) throw new Error("Missing access token.");
       return inventoryApi.issueStock(accessToken, input);
     },
     onSuccess: async () => {
       setIssueOpen(false);
       setIssueError(null);
       setSuccessMessage("Stock issued successfully.");
+      notifyWrite();
       await queryClient.invalidateQueries({ queryKey: ["inventory-balances"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory-transactions"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory-low-stock"] });
@@ -164,16 +172,14 @@ export function InventoryPage() {
 
   const adjustMutation = useMutation({
     mutationFn: async (input: AdjustStockInput) => {
-      if (!accessToken) {
-        throw new Error("Missing access token.");
-      }
-
+      if (!accessToken) throw new Error("Missing access token.");
       return inventoryApi.adjustStock(accessToken, input);
     },
     onSuccess: async () => {
       setAdjustOpen(false);
       setAdjustError(null);
       setSuccessMessage("Stock adjustment applied successfully.");
+      notifyWrite();
       await queryClient.invalidateQueries({ queryKey: ["inventory-balances"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory-transactions"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory-low-stock"] });
@@ -409,6 +415,9 @@ export function InventoryPage() {
     }
   };
 
+  const items = itemsQuery.data ?? [];
+  const warehouses = warehousesQuery.data ?? [];
+
   return (
     <Stack spacing={3}>
       <PageSection
@@ -445,7 +454,7 @@ export function InventoryPage() {
               sx={{ minWidth: 220 }}
             >
               <MenuItem value={ALL_ITEMS}>All items</MenuItem>
-              {inventoryItemOptions.map((item) => (
+              {items.map((item) => (
                 <MenuItem key={item.id} value={item.id}>
                   {item.sku} - {item.name}
                 </MenuItem>
@@ -460,9 +469,9 @@ export function InventoryPage() {
               sx={{ minWidth: 220 }}
             >
               <MenuItem value={ALL_WAREHOUSES}>All warehouses</MenuItem>
-              {warehouseOptions.map((warehouse) => (
+              {warehouses.map((warehouse) => (
                 <MenuItem key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name}
+                  {warehouse.code} - {warehouse.name}
                 </MenuItem>
               ))}
             </TextField>

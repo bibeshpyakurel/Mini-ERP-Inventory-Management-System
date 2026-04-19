@@ -11,6 +11,7 @@ public sealed class ItemService(
     ICategoryRepository categoryRepository,
     IAuditLogRepository auditLogRepository,
     ICurrentUserService currentUserService,
+    ITenantContext tenantContext,
     IApplicationDbContext dbContext) : IItemService
 {
     public async Task<ItemDto> CreateItemAsync(
@@ -23,6 +24,9 @@ public sealed class ItemService(
         string? description,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to create an item.");
+
         var category = await categoryRepository.GetByIdAsync(categoryId, cancellationToken)
             ?? throw new NotFoundException("Category was not found.");
 
@@ -33,12 +37,14 @@ public sealed class ItemService(
         }
 
         var item = Item.Create(categoryId, sku, name, unit, reorderLevel, standardCost, description);
+        item.TenantId = tenantId;
+
         var performedByUserId = GetPerformedByUserId();
+        var auditLog = AuditLog.Create("ItemCreated", nameof(Item), performedByUserId, $"Created item {item.Sku} - {item.Name}", item.Id);
+        auditLog.TenantId = tenantId;
 
         await itemRepository.AddAsync(item, cancellationToken);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("ItemCreated", nameof(Item), performedByUserId, $"Created item {item.Sku} - {item.Name}", item.Id),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Map(item, category.Name);
@@ -73,6 +79,9 @@ public sealed class ItemService(
         string? description,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to update an item.");
+
         var item = await itemRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException("Item was not found.");
 
@@ -87,10 +96,12 @@ public sealed class ItemService(
 
         item.UpdateDetails(categoryId, sku, name, unit, reorderLevel, standardCost, description);
         var performedByUserId = GetPerformedByUserId();
+
+        var auditLog = AuditLog.Create("ItemUpdated", nameof(Item), performedByUserId, $"Updated item {item.Sku} - {item.Name}", item.Id);
+        auditLog.TenantId = tenantId;
+
         itemRepository.Update(item);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("ItemUpdated", nameof(Item), performedByUserId, $"Updated item {item.Sku} - {item.Name}", item.Id),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Map(item, category.Name);
@@ -98,6 +109,9 @@ public sealed class ItemService(
 
     public async Task<ItemDto> SetItemStatusAsync(Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to change item status.");
+
         var item = await itemRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException("Item was not found.");
 
@@ -111,10 +125,11 @@ public sealed class ItemService(
         }
 
         var performedByUserId = GetPerformedByUserId();
+        var auditLog = AuditLog.Create("ItemStatusChanged", nameof(Item), performedByUserId, $"Set item {item.Sku} active={item.IsActive}", item.Id);
+        auditLog.TenantId = tenantId;
+
         itemRepository.Update(item);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("ItemStatusChanged", nameof(Item), performedByUserId, $"Set item {item.Sku} active={item.IsActive}", item.Id),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Map(item, item.Category?.Name ?? string.Empty);

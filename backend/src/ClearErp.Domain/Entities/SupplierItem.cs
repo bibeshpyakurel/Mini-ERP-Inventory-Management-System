@@ -2,7 +2,7 @@ using ClearErp.Domain.Common;
 
 namespace ClearErp.Domain.Entities;
 
-public sealed class SupplierItem : BaseEntity
+public sealed class SupplierItem : TenantEntity
 {
     public Guid SupplierId { get; set; }
     public Guid ItemId { get; set; }

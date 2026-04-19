@@ -15,8 +15,8 @@ import {
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import { AppFormTextField } from "../../components/AppFormTextField";
-import { inventoryItemOptions } from "../inventory/constants";
-import { supplierOptions } from "./constants";
+import type { Supplier } from "../suppliers/types";
+import type { Item } from "../items/types";
 import type { CreatePurchaseOrderInput } from "./types";
 
 const poFormSchema = z.object({
@@ -39,18 +39,20 @@ type PurchaseOrderFormDialogProps = {
   open: boolean;
   isSubmitting: boolean;
   errorMessage?: string | null;
+  suppliers: Supplier[];
+  items: Item[];
   onClose: () => void;
   onSubmit: (values: CreatePurchaseOrderInput) => Promise<void>;
 };
 
-const getDefaultValues = (): PurchaseOrderFormValues => ({
+const getDefaultValues = (suppliers: Supplier[], items: Item[]): PurchaseOrderFormValues => ({
   poNumber: "",
-  supplierId: supplierOptions[0].id,
+  supplierId: suppliers[0]?.id ?? "",
   orderDate: new Date().toISOString().slice(0, 10),
   expectedDate: "",
   lines: [
     {
-      itemId: inventoryItemOptions[0].id,
+      itemId: items[0]?.id ?? "",
       orderedQuantity: 1,
       unitCost: 0,
     },
@@ -61,11 +63,13 @@ export function PurchaseOrderFormDialog({
   open,
   isSubmitting,
   errorMessage,
+  suppliers,
+  items,
   onClose,
   onSubmit,
 }: PurchaseOrderFormDialogProps) {
   const { control, handleSubmit, reset, setError } = useForm<PurchaseOrderFormValues>({
-    defaultValues: getDefaultValues(),
+    defaultValues: getDefaultValues(suppliers, items),
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -108,7 +112,7 @@ export function PurchaseOrderFormDialog({
       lines: parsed.data.lines,
     });
 
-    reset(getDefaultValues());
+    reset(getDefaultValues(suppliers, items));
   });
 
   return (
@@ -121,7 +125,7 @@ export function PurchaseOrderFormDialog({
           <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
             <AppFormTextField control={control} name="poNumber" label="PO number" fullWidth />
             <AppFormTextField control={control} name="supplierId" label="Supplier" select fullWidth>
-              {supplierOptions.map((supplier) => (
+              {suppliers.map((supplier) => (
                 <MenuItem key={supplier.id} value={supplier.id}>
                   {supplier.name}
                 </MenuItem>
@@ -159,7 +163,7 @@ export function PurchaseOrderFormDialog({
                 startIcon={<AddRoundedIcon />}
                 onClick={() =>
                   append({
-                    itemId: inventoryItemOptions[0].id,
+                    itemId: items[0]?.id ?? "",
                     orderedQuantity: 1,
                     unitCost: 0,
                   })
@@ -179,7 +183,7 @@ export function PurchaseOrderFormDialog({
                   select
                   fullWidth
                 >
-                  {inventoryItemOptions.map((item) => (
+                  {items.map((item) => (
                     <MenuItem key={item.id} value={item.id}>
                       {item.sku} - {item.name}
                     </MenuItem>

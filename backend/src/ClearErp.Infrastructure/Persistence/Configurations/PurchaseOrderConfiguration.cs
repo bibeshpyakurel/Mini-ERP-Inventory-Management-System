@@ -11,7 +11,7 @@ public sealed class PurchaseOrderConfiguration : IEntityTypeConfiguration<Purcha
         builder.ToTable("purchase_orders");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.PoNumber).HasMaxLength(50).IsRequired();
-        builder.HasIndex(x => x.PoNumber).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.PoNumber }).IsUnique();
 
         builder.HasOne(x => x.Supplier)
             .WithMany(x => x.PurchaseOrders)

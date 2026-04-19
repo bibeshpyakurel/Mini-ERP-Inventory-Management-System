@@ -12,7 +12,7 @@ public sealed class JwtTokenGenerator(IOptions<JwtOptions> options) : IJwtTokenG
 {
     private readonly JwtOptions _options = options.Value;
 
-    public (string AccessToken, DateTime ExpiresAtUtc) GenerateToken(User user, IReadOnlyCollection<string> roles)
+    public (string AccessToken, DateTime ExpiresAtUtc) GenerateToken(User user, IReadOnlyCollection<string> roles, Guid tenantId, string industry)
     {
         var expiresAtUtc = DateTime.UtcNow.AddMinutes(_options.ExpirationMinutes);
 
@@ -23,7 +23,9 @@ public sealed class JwtTokenGenerator(IOptions<JwtOptions> options) : IJwtTokenG
             new(JwtRegisteredClaimNames.UniqueName, user.FullName),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.FullName),
-            new(ClaimTypes.Email, user.Email)
+            new(ClaimTypes.Email, user.Email),
+            new("tenant_id", tenantId.ToString()),
+            new("tenant_industry", industry)
         };
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

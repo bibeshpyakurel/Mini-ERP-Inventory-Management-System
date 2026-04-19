@@ -13,6 +13,9 @@ export type AuthResponse = {
   email: string;
   fullName: string;
   roles: string[];
+  tenantId: string;
+  tenantName: string;
+  industry: string;
 };
 
 export type CurrentUserResponse = {

@@ -9,6 +9,7 @@ namespace ClearErp.Infrastructure.Services;
 public sealed class SupplierService(
     ISupplierRepository supplierRepository,
     IItemRepository itemRepository,
+    ITenantContext tenantContext,
     IApplicationDbContext dbContext) : ISupplierService
 {
     public async Task<IReadOnlyList<SupplierDto>> SearchSuppliersAsync(SupplierFilter filter, CancellationToken cancellationToken = default)
@@ -32,6 +33,9 @@ public sealed class SupplierService(
         IReadOnlyCollection<UpsertSupplierItemRequest> items,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to create a supplier.");
+
         var existingSupplier = await supplierRepository.GetByEmailAsync(email, cancellationToken);
         if (existingSupplier is not null)
         {
@@ -39,7 +43,9 @@ public sealed class SupplierService(
         }
 
         var supplier = Supplier.Create(name, contactName, email, phone, notes);
-        await SyncSupplierItemsAsync(supplier, items, cancellationToken);
+        supplier.TenantId = tenantId;
+
+        await SyncSupplierItemsAsync(supplier, items, tenantId, cancellationToken);
 
         await supplierRepository.AddAsync(supplier, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -57,6 +63,9 @@ public sealed class SupplierService(
         IReadOnlyCollection<UpsertSupplierItemRequest> items,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to update a supplier.");
+
         var supplier = await supplierRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException("Supplier was not found.");
 
@@ -68,7 +77,7 @@ public sealed class SupplierService(
 
         supplier.UpdateDetails(name, contactName, email, phone, notes);
         supplier.SupplierItems.Clear();
-        await SyncSupplierItemsAsync(supplier, items, cancellationToken);
+        await SyncSupplierItemsAsync(supplier, items, tenantId, cancellationToken);
 
         supplierRepository.Update(supplier);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -99,6 +108,7 @@ public sealed class SupplierService(
     private async Task SyncSupplierItemsAsync(
         Supplier supplier,
         IReadOnlyCollection<UpsertSupplierItemRequest> items,
+        Guid tenantId,
         CancellationToken cancellationToken)
     {
         foreach (var itemRequest in items)
@@ -106,7 +116,9 @@ public sealed class SupplierService(
             var item = await itemRepository.GetByIdAsync(itemRequest.ItemId, cancellationToken)
                 ?? throw new NotFoundException($"Item {itemRequest.ItemId} was not found.");
 
-            supplier.SupplierItems.Add(SupplierItem.Create(supplier.Id, item.Id, itemRequest.SupplierSku));
+            var supplierItem = SupplierItem.Create(supplier.Id, item.Id, itemRequest.SupplierSku);
+            supplierItem.TenantId = tenantId;
+            supplier.SupplierItems.Add(supplierItem);
         }
     }
 

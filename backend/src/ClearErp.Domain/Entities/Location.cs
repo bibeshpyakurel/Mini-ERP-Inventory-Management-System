@@ -2,7 +2,7 @@ using ClearErp.Domain.Common;
 
 namespace ClearErp.Domain.Entities;
 
-public sealed class Location : BaseEntity
+public sealed class Location : TenantEntity
 {
     public Guid WarehouseId { get; set; }
     public string Name { get; set; } = string.Empty;

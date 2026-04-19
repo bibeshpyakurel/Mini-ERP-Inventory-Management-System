@@ -1,459 +1,424 @@
 # ClearERP
 
-ClearERP is a full-stack internal business web app built to simulate the kind of inventory and purchasing workflows used by manufacturing, warehousing, and operations-driven companies. It is designed as a portfolio project, but it follows the same core ideas you would expect in a real ERP module: traceable stock movement, purchasing workflows, reporting, and role-based access.
+A full-stack multi-tenant ERP system demonstrating inventory management, procurement workflows, and operational reporting across six industry verticals. Built as a portfolio project showcasing enterprise application architecture with .NET and React.
 
-## Project Summary
+---
 
-This project demonstrates how to build a modern ERP-style inventory system using:
+## What is ClearERP?
 
-- `React` for the frontend
-- `ASP.NET Core Web API` for backend business logic
-- `PostgreSQL` for data storage
-- `OpenAPI / Swagger` for API exploration and testing
+ClearERP simulates the inventory and purchasing workflows found in real ERP systems used by manufacturing, warehousing, and operations-driven companies. Unlike generic CRUD demos, it implements the business logic that matters in production ERP software:
 
-The application supports:
+- **Traceable stock movements** with full transaction history
+- **Multi-step procurement workflows** (draft → approve → receive)
+- **Multi-tenant isolation** with per-company data separation
+- **Role-based access control** (Admin, Inventory Manager, Warehouse Staff)
+- **Operational reporting** with KPIs and low-stock alerts
+- **Complete audit trail** for compliance and accountability
 
-- secure sign-in
-- item master management
-- supplier management
-- inventory tracking
-- stock issue and stock adjustment workflows
-- purchase order management
-- goods receipt processing
-- reporting and dashboard KPIs
-- audit logging
+---
 
-## Demo-First Product Goal
+## Demo-First Design
 
-This repository is intentionally designed to feel like a realistic ERP application without becoming heavy to evaluate.
+This project is built for immediate evaluation. There's no complex setup, no account provisioning, and no database seeding required.
 
-The target experience is:
+**Start the app and sign in** — everything works out of the box.
 
-- technically credible for engineers and hiring teams
-- simple enough to explore in one short session
-- easy to boot locally or in Docker
-- immediately usable with seeded data and demo personas
+Each of the six demo companies comes pre-loaded with:
+- Items, categories, and suppliers
+- Purchase orders in various stages
+- Inventory balances and transaction history
+- Role-appropriate user accounts
 
-That means the project favors complete workflows, seeded scenarios, and guided exploration over complex tenant setup, user provisioning, or enterprise onboarding steps.
+The login page offers **quick-fill buttons** that auto-populate credentials, making it trivial to explore different companies and roles.
+
+---
+
+## Multi-Tenant Architecture
+
+ClearERP demonstrates enterprise multi-tenancy: each company operates in complete isolation with its own data, users, and business context.
+
+| Company | Industry | Focus Area |
+|---------|----------|------------|
+| **ClearFurniture Corp** | Furniture Manufacturing | Office furniture components and finished goods |
+| **TechFlow Electronics** | Electronics | Circuit boards, components, and assemblies |
+| **FreshFoods Co** | Food & Beverage | Perishable inventory with shelf-life management |
+| **CloudPeak SaaS** | SaaS / Cloud | Software licenses and hardware assets |
+| **NetBridge IT Services** | IT Services | Network equipment and service materials |
+| **ShieldCore Cybersecurity** | Cybersecurity | Security appliances and monitoring tools |
+
+This showcases how a single ERP platform adapts to fundamentally different business contexts — a key architectural decision in real-world enterprise software.
+
+---
+
+## Demo Credentials
+
+### Furniture Manufacturing
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@clearfurniture.local` | `Admin123!` |
+| Warehouse | `warehouse@clearfurniture.local` | `Warehouse123!` |
+
+### Electronics
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@techflow-electronics.local` | `Admin123!` |
+| Warehouse | `warehouse@techflow-electronics.local` | `Warehouse123!` |
+
+### Food & Beverage
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@freshfoods.local` | `Admin123!` |
+| Warehouse | `warehouse@freshfoods.local` | `Warehouse123!` |
+
+### SaaS / Cloud
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@cloudpeak.local` | `Admin123!` |
+| Warehouse | `warehouse@cloudpeak.local` | `Warehouse123!` |
+
+### IT Services
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@netbridge.local` | `Admin123!` |
+| Warehouse | `warehouse@netbridge.local` | `Warehouse123!` |
+
+### Cybersecurity
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@shieldcore.local` | `Admin123!` |
+| Warehouse | `warehouse@shieldcore.local` | `Warehouse123!` |
+
+---
 
 ## Architecture Overview
 
-The project uses a standard 3-tier web application architecture:
-
-```text
-Browser
-  -> React frontend
-  -> ASP.NET Core API
-  -> PostgreSQL database
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Browser                                  │
+│                    React SPA (Vite)                             │
+├─────────────────────────────────────────────────────────────────┤
+│                      REST API                                    │
+│               ASP.NET Core Web API                              │
+├───────────────┬───────────────┬───────────────┬─────────────────┤
+│   API Layer   │  Application  │    Domain     │ Infrastructure  │
+│  Controllers  │   Services    │   Entities    │   EF Core +     │
+│  Contracts    │   Interfaces  │   Value Objs  │   PostgreSQL    │
+│  Validation   │   DTOs        │   Enums       │   JWT Auth      │
+└───────────────┴───────────────┴───────────────┴─────────────────┘
 ```
 
-### Frontend
+### Clean Architecture
 
-The frontend is a React single-page application that runs in the browser. It handles:
+The backend follows **Clean Architecture** principles with four distinct layers:
 
-- login flow
-- protected routes
-- forms and validation
-- tables, reports, and dashboards
-- API calls to the backend
+- **Domain** — Core business entities, value objects, and domain logic
+- **Application** — Use cases, service interfaces, DTOs, and business rules
+- **Infrastructure** — EF Core, database access, JWT token generation, external services
+- **API** — Controllers, request/response contracts, validation, middleware
 
-### Backend
+### Frontend Architecture
 
-The backend is an ASP.NET Core Web API. It acts as the main business layer and handles:
+The React frontend uses a feature-based structure:
 
-- authentication and authorization
-- ERP business rules
-- stock movement logic
-- purchase order workflows
-- reporting queries
-- audit logging
-- database access through EF Core
+- **React 19** with TypeScript for type safety
+- **React Router** for client-side navigation
+- **TanStack Query** for server state management
+- **React Hook Form** with Zod validation
+- **Material UI** for the component library
 
-### Database
-
-The PostgreSQL database stores:
-
-- users and roles
-- items and categories
-- suppliers and supplier-item mappings
-- inventory balances
-- inventory transactions
-- purchase orders and purchase order lines
-- goods receipts
-- stock adjustments
-- audit logs
+---
 
 ## Tech Stack
 
 ### Frontend
-
-- `Node.js 22`
-- `React 19`
-- `TypeScript 5`
-- `Vite 7`
-- `React Router 7`
-- `@tanstack/react-query 5`
-- `React Hook Form 7`
-- `Zod 3`
-- `MUI 7`
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 19 | UI library |
+| TypeScript | 5 | Type safety |
+| Vite | 7 | Build tool |
+| React Router | 7 | Routing |
+| TanStack Query | 5 | Server state |
+| React Hook Form | 7 | Form management |
+| Zod | 3 | Schema validation |
+| Material UI | 7 | Component library |
 
 ### Backend
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| .NET | 9 | Runtime |
+| ASP.NET Core | 9 | Web framework |
+| Entity Framework Core | 9 | ORM |
+| PostgreSQL | 16 | Database |
+| FluentValidation | — | Request validation |
+| Serilog | — | Structured logging |
+| JWT Bearer | — | Authentication |
+| Swagger/OpenAPI | — | API documentation |
 
-- `.NET 9`
-- `ASP.NET Core Web API`
-- `Entity Framework Core 9`
-- `Npgsql` PostgreSQL provider
-- `FluentValidation`
-- `Serilog`
-- `JWT Bearer Authentication`
-- `Swagger / OpenAPI`
+### Infrastructure
+| Technology | Purpose |
+|------------|---------|
+| Docker Compose | Local development orchestration |
+| GitHub Actions | CI/CD pipeline |
+| Testcontainers | Integration test database |
 
-### Database and Dev Tooling
-
-- `PostgreSQL 16`
-- `Docker Compose`
+---
 
 ## Repository Structure
 
-```text
-.
+```
+ClearERP/
 ├── backend/
 │   ├── src/
-│   │   ├── ClearErp.Api/
-│   │   ├── ClearErp.Application/
-│   │   ├── ClearErp.Domain/
-│   │   └── ClearErp.Infrastructure/
+│   │   ├── ClearErp.Api/           # Controllers, contracts, middleware
+│   │   ├── ClearErp.Application/   # Services, interfaces, DTOs
+│   │   ├── ClearErp.Domain/        # Entities, enums, domain logic
+│   │   └── ClearErp.Infrastructure/# EF Core, seeding, auth
 │   └── tests/
 │       ├── ClearErp.UnitTests/
 │       └── ClearErp.IntegrationTests/
-├── docs/
-│   ├── api/
-│   ├── architecture/
-│   └── screenshots/
 ├── frontend/
-└── README.md
+│   ├── src/
+│   │   ├── api/                    # API client
+│   │   ├── app/                    # App config, routes, navigation
+│   │   ├── components/             # Shared UI components
+│   │   ├── features/               # Feature modules (auth, items, etc.)
+│   │   ├── layouts/                # Page layouts
+│   │   └── pages/                  # Route pages
+│   └── public/
+├── docs/
+│   ├── api/                        # API endpoint documentation
+│   ├── architecture/               # Design documents
+│   └── screenshots/                # UI screenshots
+└── docker-compose.yml
 ```
+
+---
 
 ## Business Workflows
 
-### 1. Authentication
+### 1. Authentication & Authorization
+- JWT-based authentication with role claims
+- Tenant-scoped data isolation via global query filters
+- Three role levels: Admin, Inventory Manager, Warehouse Staff
 
-- user signs in with email and password
-- backend verifies password hash
-- API returns JWT token
-- frontend stores token and uses it for protected requests
-
-### 2. Item Master
-
-- create inventory items
-- assign category, SKU, unit, reorder level, and cost
-- activate and deactivate items
+### 2. Item Master Management
+- Create and maintain inventory items
+- Assign categories, SKUs, units, and costs
+- Set reorder thresholds for low-stock alerts
+- Activate/deactivate items without deletion
 
 ### 3. Supplier Management
+- Maintain supplier directory with contact info
+- Map suppliers to the items they provide
+- Track supplier-specific SKUs
 
-- create and maintain supplier records
-- associate suppliers with items they provide
-
-### 4. Purchase Orders
-
-- create purchase orders
-- add line items
-- track status as draft, approved, partially received, completed, or cancelled
+### 4. Purchase Order Lifecycle
+- **Draft** — Create and edit before submission
+- **Approved** — Ready for receiving
+- **Partially Received** — Some goods received
+- **Completed** — Fully received
+- **Cancelled** — Order cancelled
 
 ### 5. Goods Receipt
-
-- receive stock against purchase orders
-- update received quantities
-- generate inventory transactions
+- Receive inventory against approved POs
+- Select destination warehouse and location
+- Automatic inventory balance updates
+- Transaction audit trail
 
 ### 6. Inventory Operations
+- View real-time balances by item/warehouse
+- Issue stock for operational consumption
+- Adjust stock for corrections, damage, or cycle counts
+- Full transaction history with reasons
 
-- view balances by item and location
-- issue stock for operational usage
-- adjust stock for corrections or damage
-- keep an auditable transaction history
-
-### 7. Reporting
-
-- dashboard KPIs
-- low-stock reporting
-- stock valuation
-- purchase order summaries
-- recent transaction activity
+### 7. Reporting & Analytics
+- Dashboard KPIs and trend indicators
+- Low-stock alerts based on reorder levels
+- Stock valuation reports
+- Purchase order summaries
+- Recent transaction activity
 
 ### 8. Audit Logging
+- Track key actions: logins, purchases, receipts, adjustments
+- Immutable audit trail for compliance
+- Admin-accessible audit log viewer
 
-- log key actions such as login, purchasing, receipts, stock issue, and stock adjustment
-- expose read-only audit history for administrators
-
-## Demo Data
-
-The local demo database includes seeded data so the UI is useful immediately after startup.
-
-Current demo coverage includes:
-
-- `6` inventory items
-- `3` suppliers
-- `6` purchase orders across multiple statuses
-- `7` inventory transactions
-- low-stock examples
-- audit log activity
-
-Demo login accounts:
-
-- `admin@clearerp.local` / `Admin123!`
-- `warehouse@clearerp.local` / `Warehouse123!`
-
-Suggested evaluator flow:
-
-- sign in as `admin@clearerp.local`
-- review dashboard KPIs
-- inspect items and suppliers
-- open purchase orders and receive stock
-- confirm the resulting inventory and report changes
-- check audit logs for traceability
+---
 
 ## Setup Instructions
 
 ### Prerequisites
 
-Install:
+- **Node.js 22+**
+- **.NET 9 SDK**
+- **PostgreSQL 16**
+- **Docker** (optional, for containerized setup)
 
-- `.NET 10 SDK` or the SDK pinned in `backend/global.json`
-- `Node.js`
-- `PostgreSQL 16`
+### Quick Start with Docker
 
-Optional:
+```bash
+# Clone the repository
+git clone https://github.com/bibeshpyakurel/ClearERP.git
+cd ClearERP
 
-- `Docker Desktop` or Docker Engine with Compose
+# Copy environment files
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
 
-### Quick Start
+# Start all services
+docker compose up --build
+```
 
-1. Copy the example environment files
-2. Start PostgreSQL
-3. Run the backend API
-4. Run the frontend dev server
-5. Open `http://localhost:5173`
-6. Sign in with `admin@clearerp.local` / `Admin123!`
+Open:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:5000
+- Swagger: http://localhost:5000/swagger
 
-Create local environment files:
+### Local Development
+
+**1. Start PostgreSQL**
+
+```bash
+# macOS with Homebrew
+brew services start postgresql@16
+
+# Or use Docker
+docker run -d --name clearerp-db \
+  -e POSTGRES_USER=clearerp \
+  -e POSTGRES_PASSWORD=clearerp \
+  -e POSTGRES_DB=clearerp \
+  -p 5432:5432 \
+  postgres:16
+```
+
+**2. Configure Environment**
 
 ```bash
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
 ```
 
-The committed example values are intentionally for local development only. Do not reuse them outside a local machine or CI environment you control.
-
-### Local Development
-
-Start PostgreSQL if it is not already running:
+**3. Run the Backend**
 
 ```bash
-brew services start postgresql@16
+cd backend
+dotnet restore
+dotnet run --project src/ClearErp.Api
 ```
 
-Restore the backend dependencies:
+The backend will:
+- Apply EF Core migrations automatically
+- Seed all demo data on first run
+- Listen on http://localhost:5000
 
-```bash
-cd "/Users/bibeshpyakurel/Documents/GitHub/ClearERP"
-export DOTNET_ROOT=/opt/homebrew/opt/dotnet@9/libexec
-export PATH="/opt/homebrew/opt/dotnet@9/bin:$PATH"
-dotnet restore backend/ClearErp.sln
-```
-
-Run the backend:
-
-```bash
-cd "/Users/bibeshpyakurel/Documents/GitHub/ClearERP"
-export ASPNETCORE_ENVIRONMENT=Development
-export DOTNET_ROOT=/opt/homebrew/opt/dotnet@9/libexec
-export PATH="/opt/homebrew/opt/dotnet@9/bin:$PATH"
-dotnet run --no-build --project backend/src/ClearErp.Api/ClearErp.Api.csproj --urls http://127.0.0.1:5000
-```
-
-Run the frontend:
-
-```bash
-cd "/Users/bibeshpyakurel/Documents/GitHub/ClearERP/frontend"
-npm install
-npm run dev -- --host 0.0.0.0 --port 5173
-```
-
-Open the app:
-
-- frontend: `http://localhost:5173`
-- backend health: `http://127.0.0.1:5000/health`
-- Swagger: `http://127.0.0.1:5000/swagger`
-
-### Docker Setup
-
-The repo includes:
-
-- `docker-compose.yml`
-- `backend/Dockerfile`
-- `frontend/Dockerfile`
-
-To start with Docker:
-
-```bash
-cp backend/.env.example backend/.env
-docker compose up --build
-```
-
-Expected URLs:
-
-- frontend: `http://localhost:5173`
-- backend: `http://127.0.0.1:5000`
-- Swagger: `http://127.0.0.1:5000/swagger`
-
-## Database and Migration Notes
-
-The project uses PostgreSQL with Entity Framework Core.
-
-Current development behavior:
-
-- the backend applies EF Core migrations on startup with `MigrateAsync()`
-- seed data is applied through EF Core model seeding
-
-Important note:
-
-- the initial migration is committed in the repository under `backend/src/ClearErp.Infrastructure/Persistence/Migrations`
-- integration tests require Docker because they use PostgreSQL Testcontainers
-
-Migration workflow:
-
-```bash
-dotnet ef migrations add InitialCreate --project backend/src/ClearErp.Infrastructure --startup-project backend/src/ClearErp.Api
-dotnet ef database update --project backend/src/ClearErp.Infrastructure --startup-project backend/src/ClearErp.Api
-```
-
-Database design reference:
-
-- [requirements-and-domain-design.md](docs/architecture/requirements-and-domain-design.md)
-
-API outline reference:
-
-- [endpoint-outline.md](docs/api/endpoint-outline.md)
-
-Screenshot reference:
-
-- [docs/screenshots/README.md](docs/screenshots/README.md)
-
-## API Documentation
-
-Once the backend is running:
-
-- Swagger UI: `http://127.0.0.1:5000/swagger`
-
-Suggested demo flow in Swagger:
-
-1. call `POST /api/auth/login`
-2. copy the access token
-3. click `Authorize`
-4. paste `Bearer <token>`
-5. test endpoints like:
-   - `GET /api/items`
-   - `GET /api/suppliers`
-   - `GET /api/inventory/balances`
-   - `GET /api/purchase-orders`
-   - `GET /api/reports/stock-summary`
-   - `GET /api/audit-logs`
-
-## Screenshots
-
-Suggested screenshots for this project should live in `docs/screenshots/`.
-
-Recommended captures:
-
-- login page
-- dashboard
-- items page
-- suppliers page
-- inventory page
-- purchase orders page
-- reports page
-- audit logs page
-
-This repo currently includes the screenshot directory and naming guide, but screenshot image files still need to be captured and added.
-
-## Testing
-
-The repository contains:
-
-- backend unit tests for services and domain logic
-- backend integration tests for API behaviors
-
-Examples covered:
-
-- auth flow
-- item service behavior
-- purchase order logic
-- inventory issue and adjustment rules
-- goods receipt workflow
-- reporting behavior
-
-Run the full backend test suite:
-
-```bash
-dotnet test backend/ClearErp.sln --nologo
-```
-
-Run frontend verification:
+**4. Run the Frontend**
 
 ```bash
 cd frontend
-npm ci
-npm run build
+npm install
+npm run dev
 ```
 
-Note: the integration test project starts a real PostgreSQL container. If Docker is not running, those tests will fail fast.
+Open http://localhost:5173
 
-## Demo Deployment Notes
+---
 
-For a recruiter-friendly deployment, keep the operating model simple:
+## API Documentation
 
-- deploy a single backend API and single frontend app
-- use the seeded demo dataset
-- expose the two demo accounts from this README
-- keep environment configuration to connection string, JWT settings, and frontend API base URL
-- prefer Docker Compose or two small containers over a complex orchestrated setup
+With the backend running, explore the API at:
 
-If you want a public demo, treat the environment as read-mostly and refresh the database regularly so the walkthrough stays predictable.
+- **Swagger UI**: http://localhost:5000/swagger
 
-## CI
+### Testing the API
 
-GitHub Actions is configured to:
+1. Call `POST /api/auth/login` with credentials
+2. Copy the `accessToken` from the response
+3. Click "Authorize" in Swagger
+4. Enter: `Bearer <your-token>`
+5. Explore endpoints:
+   - `GET /api/items` — Item catalog
+   - `GET /api/suppliers` — Supplier directory
+   - `GET /api/categories` — Item categories
+   - `GET /api/warehouses` — Warehouses with locations
+   - `GET /api/inventory/balances` — Current stock levels
+   - `GET /api/purchase-orders` — PO list
+   - `GET /api/reports/stock-summary` — Stock summary
+   - `GET /api/audit-logs` — Audit trail
 
-- restore and build the backend
-- run unit and integration tests
-- install frontend dependencies and build the Vite app
+---
 
-## Future Improvements
+## Testing
 
-- add formal EF Core migrations and migration history
-- add self-service account creation or admin user management
-- add multiple warehouses and location transfers
-- add pagination and server-side filtering for large datasets
-- improve frontend code splitting to reduce bundle size
-- add screenshot assets to the repository
-- add end-to-end browser tests
-- add deployment instructions for cloud hosting
-- support email notifications for low stock and approvals
+### Backend Tests
+
+```bash
+cd backend
+dotnet test
+```
+
+Tests include:
+- Unit tests for domain logic and services
+- Integration tests with real PostgreSQL (via Testcontainers)
+
+### Frontend Verification
+
+```bash
+cd frontend
+npm run build    # Production build
+npm run lint     # ESLint check
+```
+
+---
+
+## Why ERP Across Industries?
+
+ERP systems aren't one-size-fits-all. Different industries have fundamentally different:
+
+| Industry | Key Challenge | ERP Focus |
+|----------|--------------|-----------|
+| **Manufacturing** | Bill of materials, production scheduling | Component tracking, work orders |
+| **Electronics** | Rapid obsolescence, component variants | Revision control, lot tracking |
+| **Food & Beverage** | Perishability, regulatory compliance | Shelf-life, batch traceability |
+| **SaaS** | License management, subscription tracking | Asset management, renewals |
+| **IT Services** | Project-based inventory, serial tracking | Equipment allocation, service items |
+| **Cybersecurity** | Appliance deployment, firmware versions | Asset inventory, compliance tracking |
+
+ClearERP demonstrates that **the same core ERP engine** — items, suppliers, procurement, inventory — adapts to serve any of these contexts. That's the architectural insight this project showcases.
+
+---
 
 ## Why This Project Matters
 
-This project is intentionally built as an internal operations tool rather than a generic CRUD demo. It focuses on the kinds of workflows that matter in real ERP-style software:
+This isn't a todo app or a generic CRUD demo. It's a **production-grade ERP simulation** that demonstrates:
 
-- traceable stock changes
-- approval and receiving workflows
-- operational reporting
-- auditability
-- role-based access
+### Technical Skills
+- Clean Architecture with proper layer separation
+- Multi-tenant data isolation at the database level
+- Complex business workflows (procurement lifecycle)
+- Role-based access control
+- Full-stack TypeScript/C# development
 
-That makes it a strong portfolio piece for:
+### Business Domain Knowledge
+- Understanding of ERP/inventory management concepts
+- Appreciation for audit trails and compliance
+- Workflow state machines (draft → approved → received)
+- Operational reporting and KPIs
 
-- ERP and business systems roles
-- internal tools engineering
-- backend and full-stack .NET roles
-- inventory, operations, and manufacturing software teams
+### Engineering Practices
+- Feature-based code organization
+- API-first development with OpenAPI
+- Form validation with schema-based approaches
+- Server state management patterns
+- CI/CD pipeline configuration
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+## Author
+
+Built by [Bibesh Pyakurel](https://github.com/bibeshpyakurel) as a portfolio project demonstrating full-stack enterprise application development.

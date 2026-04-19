@@ -6,4 +6,7 @@ public sealed record AuthResult(
     Guid UserId,
     string Email,
     string FullName,
-    IReadOnlyCollection<string> Roles);
+    IReadOnlyCollection<string> Roles,
+    Guid TenantId,
+    string TenantName,
+    string Industry);

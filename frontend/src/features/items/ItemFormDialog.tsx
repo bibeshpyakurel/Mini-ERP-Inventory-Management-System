@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AppFormTextField } from "../../components/AppFormTextField";
 import type { Item, UpsertItemInput } from "./types";
-import { itemCategories } from "./constants";
+import type { CategoryOption } from "./categoriesApi";
 import { useEffect } from "react";
 
 const itemFormSchema = z.object({
@@ -32,12 +32,13 @@ type ItemFormDialogProps = {
   item?: Item | null;
   isSubmitting: boolean;
   errorMessage?: string | null;
+  categories: CategoryOption[];
   onClose: () => void;
   onSubmit: (values: UpsertItemInput) => Promise<void>;
 };
 
-const getDefaultValues = (item?: Item | null): ItemFormValues => ({
-  categoryId: item?.categoryId ?? itemCategories[0].id,
+const getDefaultValues = (item?: Item | null, categories?: CategoryOption[]): ItemFormValues => ({
+  categoryId: item?.categoryId ?? categories?.[0]?.id ?? "",
   sku: item?.sku ?? "",
   name: item?.name ?? "",
   description: item?.description ?? "",
@@ -51,16 +52,17 @@ export function ItemFormDialog({
   item,
   isSubmitting,
   errorMessage,
+  categories,
   onClose,
   onSubmit,
 }: ItemFormDialogProps) {
   const { control, handleSubmit, reset, setError } = useForm<ItemFormValues>({
-    defaultValues: getDefaultValues(item),
+    defaultValues: getDefaultValues(item, categories),
   });
 
   useEffect(() => {
-    reset(getDefaultValues(item));
-  }, [item, reset, open]);
+    reset(getDefaultValues(item, categories));
+  }, [item, reset, open, categories]);
 
   const submit = handleSubmit(async (values) => {
     const parsed = itemFormSchema.safeParse(values);
@@ -107,7 +109,7 @@ export function ItemFormDialog({
             select
             fullWidth
           >
-            {itemCategories.map((category) => (
+            {categories.map((category) => (
               <MenuItem key={category.id} value={category.id}>
                 {category.name}
               </MenuItem>

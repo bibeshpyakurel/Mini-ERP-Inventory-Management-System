@@ -12,6 +12,7 @@ public sealed class InventoryService(
     IInventoryBalanceRepository inventoryBalanceRepository,
     IInventoryTransactionRepository inventoryTransactionRepository,
     IAuditLogRepository auditLogRepository,
+    ITenantContext tenantContext,
     IApplicationDbContext dbContext) : IInventoryService
 {
     public async Task<IReadOnlyList<InventoryBalanceDto>> GetBalancesAsync(
@@ -79,12 +80,19 @@ public sealed class InventoryService(
         Guid performedByUserId,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to receive stock.");
+
         await EnsureReferencesExistAsync(itemId, warehouseId, locationId, performedByUserId, cancellationToken);
 
         var balance = await inventoryBalanceRepository.GetByItemAndLocationAsync(itemId, warehouseId, locationId, cancellationToken)
             ?? InventoryBalance.Create(itemId, warehouseId, locationId);
 
         var wasNewBalance = balance.Id == default || await IsDetachedBalanceAsync(balance, cancellationToken);
+        if (wasNewBalance)
+        {
+            balance.TenantId = tenantId;
+        }
         balance.Receive(quantity);
 
         if (wasNewBalance)
@@ -107,11 +115,13 @@ public sealed class InventoryService(
             balance.QuantityOnHand,
             performedByUserId,
             purchaseOrderLineId == Guid.Empty ? purchaseOrderId : purchaseOrderLineId);
+        transaction.TenantId = tenantId;
+
+        var auditLog = AuditLog.Create("StockReceived", nameof(InventoryBalance), performedByUserId, $"Received {quantity} units for item {itemId}", itemId);
+        auditLog.TenantId = tenantId;
 
         await inventoryTransactionRepository.AddAsync(transaction, cancellationToken);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("StockReceived", nameof(InventoryBalance), performedByUserId, $"Received {quantity} units for item {itemId}", itemId),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
@@ -126,6 +136,9 @@ public sealed class InventoryService(
         Guid? referenceId = null,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to issue stock.");
+
         await EnsureReferencesExistAsync(itemId, warehouseId, locationId, performedByUserId, cancellationToken);
         Guard.AgainstNullOrWhiteSpace(reason, nameof(reason), 500);
 
@@ -146,11 +159,13 @@ public sealed class InventoryService(
             balance.QuantityOnHand,
             performedByUserId,
             referenceId);
+        transaction.TenantId = tenantId;
+
+        var auditLog = AuditLog.Create("StockIssued", nameof(InventoryBalance), performedByUserId, $"Issued {quantity} units for item {itemId}. Reason: {reason}", itemId);
+        auditLog.TenantId = tenantId;
 
         await inventoryTransactionRepository.AddAsync(transaction, cancellationToken);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("StockIssued", nameof(InventoryBalance), performedByUserId, $"Issued {quantity} units for item {itemId}. Reason: {reason}", itemId),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
 
         try
         {
@@ -172,6 +187,9 @@ public sealed class InventoryService(
         Guid? referenceId = null,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to adjust stock.");
+
         await EnsureReferencesExistAsync(itemId, warehouseId, locationId, performedByUserId, cancellationToken);
 
         if (quantityDelta == 0)
@@ -183,6 +201,10 @@ public sealed class InventoryService(
             ?? InventoryBalance.Create(itemId, warehouseId, locationId);
 
         var wasNewBalance = balance.Id == default || await IsDetachedBalanceAsync(balance, cancellationToken);
+        if (wasNewBalance)
+        {
+            balance.TenantId = tenantId;
+        }
         balance.Adjust(quantityDelta);
 
         if (wasNewBalance)
@@ -206,6 +228,7 @@ public sealed class InventoryService(
             Math.Abs(quantityDelta),
             reason,
             performedByUserId);
+        stockAdjustment.TenantId = tenantId;
 
         await dbContext.StockAdjustments.AddAsync(stockAdjustment, cancellationToken);
 
@@ -224,11 +247,13 @@ public sealed class InventoryService(
             balance.QuantityOnHand,
             performedByUserId,
             referenceId ?? stockAdjustment.Id);
+        transaction.TenantId = tenantId;
+
+        var auditLog = AuditLog.Create("StockAdjusted", nameof(StockAdjustment), performedByUserId, $"Adjusted {quantityDelta} units for item {itemId}. Reason: {reason}", stockAdjustment.Id);
+        auditLog.TenantId = tenantId;
 
         await inventoryTransactionRepository.AddAsync(transaction, cancellationToken);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("StockAdjusted", nameof(StockAdjustment), performedByUserId, $"Adjusted {quantityDelta} units for item {itemId}. Reason: {reason}", stockAdjustment.Id),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
 
         try
         {

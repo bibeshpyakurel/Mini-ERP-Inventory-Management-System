@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddSingleton<Microsoft.AspNetCore.Http.IHttpContextAccessor, Microsoft.AspNetCore.Http.HttpContextAccessor>();
 
+        services.AddScoped<ITenantContext, TenantContext>();
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -48,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
         services.AddScoped<IReportingService, ReportingService>();
         services.AddScoped<ISupplierService, SupplierService>();
+        services.AddScoped<IDemoResetService, DemoResetService>();
 
         services.AddHostedService<LowStockMonitorService>();
 

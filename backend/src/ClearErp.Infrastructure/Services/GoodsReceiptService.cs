@@ -13,6 +13,7 @@ public sealed class GoodsReceiptService(
     IInventoryBalanceRepository inventoryBalanceRepository,
     IInventoryTransactionRepository inventoryTransactionRepository,
     IAuditLogRepository auditLogRepository,
+    ITenantContext tenantContext,
     IApplicationDbContext dbContext) : IGoodsReceiptService
 {
     public async Task<GoodsReceiptDto> ReceiveAgainstPurchaseOrderAsync(
@@ -23,6 +24,9 @@ public sealed class GoodsReceiptService(
         IReadOnlyCollection<PostGoodsReceiptLineRequest> lines,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to receive goods.");
+
         if (lines.Count == 0)
         {
             throw new DomainException("A goods receipt must contain at least one line.");
@@ -52,6 +56,7 @@ public sealed class GoodsReceiptService(
         }
 
         var goodsReceipt = GoodsReceipt.Create(purchaseOrderId, receiptNumber, receivedByUserId, receivedAtUtc);
+        goodsReceipt.TenantId = tenantId;
 
         foreach (var line in lines)
         {
@@ -85,6 +90,10 @@ public sealed class GoodsReceiptService(
             purchaseOrder.RegisterReceipt(line.PurchaseOrderLineId, line.ReceivedQuantity);
             goodsReceipt.AddLine(line.PurchaseOrderLineId, line.ItemId, line.ReceivedQuantity);
 
+            // Set TenantId on newly added line
+            var addedLine = goodsReceipt.Lines.Last();
+            addedLine.TenantId = tenantId;
+
             var balance = await inventoryBalanceRepository.GetByItemAndLocationAsync(
                 line.ItemId,
                 line.WarehouseId,
@@ -93,6 +102,10 @@ public sealed class GoodsReceiptService(
 
             var balanceExists = await dbContext.InventoryBalances.AnyAsync(x => x.Id == balance.Id, cancellationToken);
 
+            if (!balanceExists)
+            {
+                balance.TenantId = tenantId;
+            }
             balance.Receive(line.ReceivedQuantity);
 
             if (balanceExists)
@@ -115,15 +128,17 @@ public sealed class GoodsReceiptService(
                 balance.QuantityOnHand,
                 receivedByUserId,
                 purchaseOrderLine.Id);
+            transaction.TenantId = tenantId;
 
             await inventoryTransactionRepository.AddAsync(transaction, cancellationToken);
         }
 
+        var auditLog = AuditLog.Create("GoodsReceiptPosted", nameof(GoodsReceipt), receivedByUserId, $"Posted goods receipt {goodsReceipt.ReceiptNumber} for purchase order {purchaseOrder.PoNumber}", goodsReceipt.Id);
+        auditLog.TenantId = tenantId;
+
         await dbContext.GoodsReceipts.AddAsync(goodsReceipt, cancellationToken);
         purchaseOrderRepository.Update(purchaseOrder);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("GoodsReceiptPosted", nameof(GoodsReceipt), receivedByUserId, $"Posted goods receipt {goodsReceipt.ReceiptNumber} for purchase order {purchaseOrder.PoNumber}", goodsReceipt.Id),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Map(goodsReceipt, purchaseOrder);

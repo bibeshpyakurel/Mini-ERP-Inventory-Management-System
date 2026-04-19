@@ -18,11 +18,12 @@ import { useMemo, useState } from "react";
 import { AppDataTable, type TableColumn } from "../components/AppDataTable";
 import { PageSection } from "../components/PageSection";
 import { useAuth } from "../features/auth/AuthContext";
-import { itemCategories } from "../features/items/constants";
+import { categoriesApi, type CategoryOption } from "../features/items/categoriesApi";
 import { ItemFormDialog } from "../features/items/ItemFormDialog";
 import { itemsApi } from "../features/items/api";
 import type { Item, ItemFilters, UpsertItemInput } from "../features/items/types";
 import { ApiClientError } from "../api/client";
+import { useDemo } from "../features/demo/DemoContext";
 
 const ALL_STATUSES = "all";
 const ALL_CATEGORIES = "all";
@@ -30,6 +31,7 @@ const ALL_CATEGORIES = "all";
 export function ItemsPage() {
   const queryClient = useQueryClient();
   const { accessToken, primaryRole } = useAuth();
+  const { notifyWrite } = useDemo();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(ALL_STATUSES);
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
@@ -49,13 +51,19 @@ export function ItemsPage() {
     [categoryFilter, search, statusFilter],
   );
 
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      if (!accessToken) return [] as CategoryOption[];
+      return categoriesApi.list(accessToken);
+    },
+    enabled: Boolean(accessToken),
+  });
+
   const itemsQuery = useQuery({
     queryKey: ["items", filters],
     queryFn: async () => {
-      if (!accessToken) {
-        return [] as Item[];
-      }
-
+      if (!accessToken) return [] as Item[];
       return itemsApi.list(accessToken, filters);
     },
     enabled: Boolean(accessToken),
@@ -63,10 +71,7 @@ export function ItemsPage() {
 
   const createItemMutation = useMutation({
     mutationFn: async (input: UpsertItemInput) => {
-      if (!accessToken) {
-        throw new Error("Missing access token.");
-      }
-
+      if (!accessToken) throw new Error("Missing access token.");
       return itemsApi.create(accessToken, input);
     },
     onSuccess: async () => {
@@ -74,15 +79,13 @@ export function ItemsPage() {
       setDialogOpen(false);
       setSelectedItem(null);
       setFormError(null);
+      notifyWrite();
     },
   });
 
   const updateItemMutation = useMutation({
     mutationFn: async ({ itemId, input }: { itemId: string; input: UpsertItemInput }) => {
-      if (!accessToken) {
-        throw new Error("Missing access token.");
-      }
-
+      if (!accessToken) throw new Error("Missing access token.");
       return itemsApi.update(accessToken, itemId, input);
     },
     onSuccess: async () => {
@@ -90,21 +93,20 @@ export function ItemsPage() {
       setDialogOpen(false);
       setSelectedItem(null);
       setFormError(null);
+      notifyWrite();
     },
   });
 
   const toggleStatusMutation = useMutation({
     mutationFn: async (item: Item) => {
-      if (!accessToken) {
-        throw new Error("Missing access token.");
-      }
-
+      if (!accessToken) throw new Error("Missing access token.");
       return itemsApi.setStatus(accessToken, item.id, {
         isActive: !item.isActive,
       });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["items"] });
+      notifyWrite();
     },
   });
 
@@ -145,6 +147,8 @@ export function ItemsPage() {
       setFormError("Unable to save the item right now.");
     }
   };
+
+  const categories = categoriesQuery.data ?? [];
 
   const columns: TableColumn<Item>[] = [
     { key: "sku", header: "SKU", render: (row) => row.sku },
@@ -244,7 +248,7 @@ export function ItemsPage() {
               sx={{ minWidth: 200 }}
             >
               <MenuItem value={ALL_CATEGORIES}>All categories</MenuItem>
-              {itemCategories.map((category) => (
+              {categories.map((category) => (
                 <MenuItem key={category.id} value={category.id}>
                   {category.name}
                 </MenuItem>
@@ -299,6 +303,7 @@ export function ItemsPage() {
         item={selectedItem}
         isSubmitting={createItemMutation.isPending || updateItemMutation.isPending}
         errorMessage={formError}
+        categories={categories}
         onClose={() => {
           setDialogOpen(false);
           setSelectedItem(null);

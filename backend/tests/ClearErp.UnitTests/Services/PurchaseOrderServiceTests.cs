@@ -6,6 +6,7 @@ using ClearErp.Domain.Enums;
 using ClearErp.Infrastructure.Persistence;
 using ClearErp.Infrastructure.Persistence.Repositories;
 using ClearErp.Infrastructure.Persistence.Seeding;
+using ClearErp.Application.Common.Interfaces;
 using ClearErp.Infrastructure.Services;
 
 namespace ClearErp.UnitTests.Services;
@@ -144,6 +145,7 @@ public sealed class PurchaseOrderServiceTests
             new SupplierRepository(dbContext),
             new ItemRepository(dbContext),
             new AuditLogRepository(dbContext),
+            new TestTenantContext(),
             dbContext);
 
     private static ApplicationDbContext CreateDbContext()
@@ -152,7 +154,7 @@ public sealed class PurchaseOrderServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, new NullTenantContext());
     }
 
     private static void SeedPurchaseOrderData(ApplicationDbContext dbContext)
@@ -194,5 +196,15 @@ public sealed class PurchaseOrderServiceTests
         });
 
         dbContext.SaveChanges();
+    }
+
+    private sealed class NullTenantContext : ITenantContext
+    {
+        public Guid? TenantId => null;
+    }
+
+    private sealed class TestTenantContext : ITenantContext
+    {
+        public Guid? TenantId { get; } = Guid.NewGuid();
     }
 }

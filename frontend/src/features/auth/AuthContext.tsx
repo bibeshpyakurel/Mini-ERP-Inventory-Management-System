@@ -14,20 +14,25 @@ import {
 } from "../../api/client";
 import type { AuthResponse, CurrentUserResponse } from "../../api/types";
 import { tokenStorage } from "./tokenStorage";
+import { TENANTS, type TenantSlug } from "./tenants";
 
 type LoginInput = {
   email: string;
   password: string;
+  tenantSlug: string;
 };
 
 type AuthContextValue = {
   accessToken: string | null;
   currentUser: CurrentUserResponse | null;
   primaryRole: string | null;
+  tenantSlug: TenantSlug | null;
   isAuthenticated: boolean;
   isBootstrapping: boolean;
+  isSwitchingRole: boolean;
   login: (input: LoginInput) => Promise<void>;
   logout: () => void;
+  switchRole: (role: "admin" | "warehouse") => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -37,7 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tokenStorage.isExpired() ? null : tokenStorage.get()
   );
   const [currentUser, setCurrentUser] = useState<CurrentUserResponse | null>(null);
+  const [tenantSlug, setTenantSlug] = useState<TenantSlug | null>(null);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [isSwitchingRole, setIsSwitchingRole] = useState(false);
   const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearSession = useCallback(() => {
@@ -48,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tokenStorage.clear();
     setAccessToken(null);
     setCurrentUser(null);
+    setTenantSlug(null);
   }, []);
 
   const scheduleExpiry = useCallback((expiresAtUtc: string) => {
@@ -111,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     tokenStorage.set(response.accessToken, response.expiresAtUtc);
     setAccessToken(response.accessToken);
+    setTenantSlug(input.tenantSlug as TenantSlug);
     scheduleExpiry(response.expiresAtUtc);
     setCurrentUser({
       userId: response.userId,
@@ -118,6 +127,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles: response.roles,
       isAuthenticated: true,
     });
+  };
+
+  const switchRole = async (role: "admin" | "warehouse") => {
+    if (!tenantSlug) return;
+
+    const tenant = TENANTS.find((t) => t.slug === tenantSlug);
+    if (!tenant) return;
+
+    const credentials = tenant[role];
+    setIsSwitchingRole(true);
+
+    try {
+      await login({
+        email: credentials.email,
+        password: credentials.password,
+        tenantSlug,
+      });
+    } finally {
+      setIsSwitchingRole(false);
+    }
   };
 
   const logout = () => {
@@ -132,10 +161,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accessToken,
         currentUser,
         primaryRole,
+        tenantSlug,
         isAuthenticated: Boolean(accessToken && currentUser?.isAuthenticated),
         isBootstrapping,
+        isSwitchingRole,
         login,
         logout,
+        switchRole,
       }}
     >
       {children}

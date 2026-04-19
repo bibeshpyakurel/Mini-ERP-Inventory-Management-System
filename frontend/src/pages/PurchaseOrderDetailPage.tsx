@@ -12,18 +12,21 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link as RouterLink, useParams } from "react-router-dom";
 import { ApiClientError } from "../api/client";
+import { useDemo } from "../features/demo/DemoContext";
 import { AppDataTable, type TableColumn } from "../components/AppDataTable";
 import { PageSection } from "../components/PageSection";
 import { useAuth } from "../features/auth/AuthContext";
 import { purchaseOrdersApi } from "../features/purchaseOrders/api";
 import { ReceivePurchaseOrderDialog } from "../features/purchaseOrders/ReceivePurchaseOrderDialog";
 import type { PurchaseOrder, ReceivePurchaseOrderInput } from "../features/purchaseOrders/types";
+import { warehousesApi, type WarehouseOption } from "../features/inventory/warehousesApi";
 import { useState } from "react";
 
 export function PurchaseOrderDetailPage() {
   const { purchaseOrderId = "" } = useParams();
   const queryClient = useQueryClient();
   const { accessToken, primaryRole } = useAuth();
+  const { notifyWrite } = useDemo();
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [receiveError, setReceiveError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -40,6 +43,15 @@ export function PurchaseOrderDetailPage() {
     enabled: Boolean(accessToken && purchaseOrderId),
   });
 
+  const warehousesQuery = useQuery({
+    queryKey: ["warehouses"],
+    queryFn: async () => {
+      if (!accessToken) return [] as WarehouseOption[];
+      return warehousesApi.list(accessToken);
+    },
+    enabled: Boolean(accessToken),
+  });
+
   const approveMutation = useMutation({
     mutationFn: async () => {
       if (!accessToken) {
@@ -51,6 +63,7 @@ export function PurchaseOrderDetailPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["purchase-order", purchaseOrderId] });
       await queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      notifyWrite();
     },
   });
 
@@ -66,6 +79,7 @@ export function PurchaseOrderDetailPage() {
       setReceiveOpen(false);
       setReceiveError(null);
       setSuccessMessage("Goods receipt posted successfully.");
+      notifyWrite();
       await queryClient.invalidateQueries({ queryKey: ["purchase-order", purchaseOrderId] });
       await queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory-balances"] });
@@ -231,6 +245,7 @@ export function PurchaseOrderDetailPage() {
             purchaseOrder={purchaseOrderQuery.data}
             isSubmitting={receiveMutation.isPending}
             errorMessage={receiveError}
+            warehouses={warehousesQuery.data ?? []}
             onClose={() => {
               setReceiveOpen(false);
               setReceiveError(null);

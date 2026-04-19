@@ -16,6 +16,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ApiClientError } from "../api/client";
+import { useDemo } from "../features/demo/DemoContext";
 import { AppDataTable, type TableColumn } from "../components/AppDataTable";
 import { PageSection } from "../components/PageSection";
 import { useAuth } from "../features/auth/AuthContext";
@@ -28,6 +29,7 @@ const ALL_STATUSES = "all";
 export function SuppliersPage() {
   const queryClient = useQueryClient();
   const { accessToken, primaryRole } = useAuth();
+  const { notifyWrite } = useDemo();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(ALL_STATUSES);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,6 +72,7 @@ export function SuppliersPage() {
       setDialogOpen(false);
       setSelectedSupplier(null);
       setFormError(null);
+      notifyWrite();
     },
   });
 
@@ -86,6 +89,7 @@ export function SuppliersPage() {
       setDialogOpen(false);
       setSelectedSupplier(null);
       setFormError(null);
+      notifyWrite();
     },
   });
 
@@ -99,6 +103,7 @@ export function SuppliersPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      notifyWrite();
     },
   });
 

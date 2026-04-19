@@ -2,7 +2,7 @@ using ClearErp.Domain.Common;
 
 namespace ClearErp.Domain.Entities;
 
-public sealed class AuditLog : BaseEntity
+public sealed class AuditLog : TenantEntity
 {
     public string Action { get; set; } = string.Empty;
     public string EntityName { get; set; } = string.Empty;

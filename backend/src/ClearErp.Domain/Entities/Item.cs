@@ -2,7 +2,7 @@ using ClearErp.Domain.Common;
 
 namespace ClearErp.Domain.Entities;
 
-public sealed class Item : BaseEntity
+public sealed class Item : TenantEntity
 {
     public Guid CategoryId { get; set; }
     public string Sku { get; set; } = string.Empty;

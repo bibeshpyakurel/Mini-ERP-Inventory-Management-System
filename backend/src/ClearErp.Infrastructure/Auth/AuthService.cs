@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ClearErp.Application.Common.Interfaces;
 using ClearErp.Application.Common.Interfaces.Repositories;
 using ClearErp.Application.Common.Interfaces.Security;
@@ -8,18 +9,26 @@ using ClearErp.Domain.Entities;
 namespace ClearErp.Infrastructure.Auth;
 
 public sealed class AuthService(
-    IUserRepository userRepository,
     IPasswordHasher passwordHasher,
     IJwtTokenGenerator jwtTokenGenerator,
     IAuditLogRepository auditLogRepository,
     IApplicationDbContext dbContext) : IAuthService
 {
-    public async Task<AuthResult> LoginAsync(string email, string password, CancellationToken cancellationToken = default)
+    public async Task<AuthResult> LoginAsync(string email, string password, string tenantSlug, CancellationToken cancellationToken = default)
     {
-        var normalizedEmail = email.Trim();
-        var user = await userRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
+        var tenant = await dbContext.Tenants
+            .SingleOrDefaultAsync(t => t.Slug == tenantSlug.Trim().ToLowerInvariant() && t.IsActive, cancellationToken);
 
-        if (user is null || !user.IsActive || !passwordHasher.VerifyPassword(user.PasswordHash, password))
+        if (tenant is null)
+            throw new UnauthorizedException("Invalid credentials.");
+
+        var normalizedEmail = email.Trim();
+        var user = await dbContext.Users
+            .IgnoreQueryFilters()
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .SingleOrDefaultAsync(u => u.Email == normalizedEmail && u.TenantId == tenant.Id && u.IsActive, cancellationToken);
+
+        if (user is null || !passwordHasher.VerifyPassword(user.PasswordHash, password))
         {
             if (user is not null)
             {
@@ -29,7 +38,7 @@ public sealed class AuthService(
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
 
-            throw new UnauthorizedException("Invalid email or password.");
+            throw new UnauthorizedException("Invalid credentials.");
         }
 
         var roles = user.UserRoles
@@ -38,7 +47,7 @@ public sealed class AuthService(
             .Cast<string>()
             .ToArray();
 
-        var (accessToken, expiresAtUtc) = jwtTokenGenerator.GenerateToken(user, roles);
+        var (accessToken, expiresAtUtc) = jwtTokenGenerator.GenerateToken(user, roles, user.TenantId, tenant.Industry);
 
         await auditLogRepository.AddAsync(
             AuditLog.Create("LoginSucceeded", nameof(User), user.Id, $"Successful login for {user.Email}", user.Id),
@@ -52,6 +61,9 @@ public sealed class AuthService(
             user.Id,
             user.Email,
             user.FullName,
-            roles);
+            roles,
+            tenant.Id,
+            tenant.Name,
+            tenant.Industry);
     }
 }

@@ -13,7 +13,7 @@ public sealed class InventoryBalanceConfiguration : IEntityTypeConfiguration<Inv
 
         builder.Property(x => x.RowVersion).IsRowVersion();
 
-        builder.HasIndex(x => new { x.ItemId, x.WarehouseId, x.LocationId }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.ItemId, x.WarehouseId, x.LocationId }).IsUnique();
 
         builder.HasOne(x => x.Item)
             .WithMany(x => x.InventoryBalances)

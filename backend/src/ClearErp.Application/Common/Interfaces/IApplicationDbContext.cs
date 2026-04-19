@@ -19,6 +19,7 @@ public interface IApplicationDbContext
     DbSet<StockAdjustment> StockAdjustments { get; }
     DbSet<Supplier> Suppliers { get; }
     DbSet<SupplierItem> SupplierItems { get; }
+    DbSet<Tenant> Tenants { get; }
     DbSet<User> Users { get; }
     DbSet<UserRole> UserRoles { get; }
     DbSet<Warehouse> Warehouses { get; }

@@ -12,6 +12,7 @@ public sealed class PurchaseOrderService(
     ISupplierRepository supplierRepository,
     IItemRepository itemRepository,
     IAuditLogRepository auditLogRepository,
+    ITenantContext tenantContext,
     IApplicationDbContext dbContext) : IPurchaseOrderService
 {
     public async Task<IReadOnlyList<PurchaseOrderDto>> SearchPurchaseOrdersAsync(
@@ -37,17 +38,28 @@ public sealed class PurchaseOrderService(
         IReadOnlyCollection<UpsertPurchaseOrderLineRequest> lines,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to create a purchase order.");
+
         await EnsureSupplierAndUserExistAsync(supplierId, createdByUserId, cancellationToken);
         await EnsureUniquePoNumberAsync(poNumber, null, cancellationToken);
         await ValidateLinesAsync(lines, cancellationToken);
 
         var purchaseOrder = PurchaseOrder.Create(poNumber, supplierId, createdByUserId, orderDate, expectedDate);
+        purchaseOrder.TenantId = tenantId;
         purchaseOrder.ReplaceLines(lines.Select(x => (x.ItemId, x.OrderedQuantity, x.UnitCost)));
 
+        // Set TenantId on all lines
+        foreach (var line in purchaseOrder.Lines)
+        {
+            line.TenantId = tenantId;
+        }
+
+        var auditLog = AuditLog.Create("PurchaseOrderCreated", nameof(PurchaseOrder), createdByUserId, $"Created purchase order {purchaseOrder.PoNumber}", purchaseOrder.Id);
+        auditLog.TenantId = tenantId;
+
         await purchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("PurchaseOrderCreated", nameof(PurchaseOrder), createdByUserId, $"Created purchase order {purchaseOrder.PoNumber}", purchaseOrder.Id),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         var reloadedPurchaseOrder = await purchaseOrderRepository.GetByIdAsync(purchaseOrder.Id, cancellationToken)
@@ -64,6 +76,9 @@ public sealed class PurchaseOrderService(
         IReadOnlyCollection<UpsertPurchaseOrderLineRequest> lines,
         CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to update a purchase order.");
+
         var purchaseOrder = await purchaseOrderRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException("Purchase order was not found.");
 
@@ -73,10 +88,17 @@ public sealed class PurchaseOrderService(
         purchaseOrder.UpdateDraftDetails(supplierId, orderDate, expectedDate);
         purchaseOrder.ReplaceLines(lines.Select(x => (x.ItemId, x.OrderedQuantity, x.UnitCost)));
 
+        // Set TenantId on all lines
+        foreach (var line in purchaseOrder.Lines)
+        {
+            line.TenantId = tenantId;
+        }
+
+        var auditLog = AuditLog.Create("PurchaseOrderUpdated", nameof(PurchaseOrder), purchaseOrder.CreatedByUserId, $"Updated purchase order {purchaseOrder.PoNumber}", purchaseOrder.Id);
+        auditLog.TenantId = tenantId;
+
         purchaseOrderRepository.Update(purchaseOrder);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("PurchaseOrderUpdated", nameof(PurchaseOrder), purchaseOrder.CreatedByUserId, $"Updated purchase order {purchaseOrder.PoNumber}", purchaseOrder.Id),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Map(purchaseOrder);
@@ -84,14 +106,19 @@ public sealed class PurchaseOrderService(
 
     public async Task<PurchaseOrderDto> ApprovePurchaseOrderAsync(Guid purchaseOrderId, CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to approve a purchase order.");
+
         var purchaseOrder = await purchaseOrderRepository.GetByIdAsync(purchaseOrderId, cancellationToken)
             ?? throw new NotFoundException("Purchase order was not found.");
 
         purchaseOrder.Approve();
+
+        var auditLog = AuditLog.Create("PurchaseOrderApproved", nameof(PurchaseOrder), purchaseOrder.CreatedByUserId, $"Approved purchase order {purchaseOrder.PoNumber}", purchaseOrder.Id);
+        auditLog.TenantId = tenantId;
+
         purchaseOrderRepository.Update(purchaseOrder);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("PurchaseOrderApproved", nameof(PurchaseOrder), purchaseOrder.CreatedByUserId, $"Approved purchase order {purchaseOrder.PoNumber}", purchaseOrder.Id),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Map(purchaseOrder);
@@ -99,14 +126,19 @@ public sealed class PurchaseOrderService(
 
     public async Task<PurchaseOrderDto> CancelPurchaseOrderAsync(Guid purchaseOrderId, CancellationToken cancellationToken = default)
     {
+        var tenantId = tenantContext.TenantId
+            ?? throw new UnauthorizedException("Tenant context is required to cancel a purchase order.");
+
         var purchaseOrder = await purchaseOrderRepository.GetByIdAsync(purchaseOrderId, cancellationToken)
             ?? throw new NotFoundException("Purchase order was not found.");
 
         purchaseOrder.Cancel();
+
+        var auditLog = AuditLog.Create("PurchaseOrderCancelled", nameof(PurchaseOrder), purchaseOrder.CreatedByUserId, $"Cancelled purchase order {purchaseOrder.PoNumber}", purchaseOrder.Id);
+        auditLog.TenantId = tenantId;
+
         purchaseOrderRepository.Update(purchaseOrder);
-        await auditLogRepository.AddAsync(
-            AuditLog.Create("PurchaseOrderCancelled", nameof(PurchaseOrder), purchaseOrder.CreatedByUserId, $"Cancelled purchase order {purchaseOrder.PoNumber}", purchaseOrder.Id),
-            cancellationToken);
+        await auditLogRepository.AddAsync(auditLog, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Map(purchaseOrder);

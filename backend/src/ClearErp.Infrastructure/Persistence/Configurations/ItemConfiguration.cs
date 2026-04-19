@@ -15,7 +15,7 @@ public sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
         builder.Property(x => x.Description).HasMaxLength(1000);
         builder.Property(x => x.Unit).HasMaxLength(32).IsRequired();
         builder.Property(x => x.StandardCost).HasPrecision(18, 2);
-        builder.HasIndex(x => x.Sku).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.Sku }).IsUnique();
 
         builder.HasOne(x => x.Category)
             .WithMany(x => x.Items)

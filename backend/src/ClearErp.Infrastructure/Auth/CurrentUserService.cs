@@ -23,5 +23,16 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
 
     public bool IsAuthenticated => httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
 
+    public Guid? TenantId
+    {
+        get
+        {
+            var value = httpContextAccessor.HttpContext?.User.FindFirst("tenant_id")?.Value;
+            return Guid.TryParse(value, out var id) ? id : null;
+        }
+    }
+
+    public string? Industry => httpContextAccessor.HttpContext?.User.FindFirst("tenant_industry")?.Value;
+
     public bool IsInRole(string role) => Roles.Contains(role, StringComparer.OrdinalIgnoreCase);
 }

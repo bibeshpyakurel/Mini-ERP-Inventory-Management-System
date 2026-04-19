@@ -3,7 +3,7 @@ using ClearErp.Domain.Enums;
 
 namespace ClearErp.Domain.Entities;
 
-public sealed class InventoryTransaction : BaseEntity
+public sealed class InventoryTransaction : TenantEntity
 {
     public Guid ItemId { get; set; }
     public Guid WarehouseId { get; set; }

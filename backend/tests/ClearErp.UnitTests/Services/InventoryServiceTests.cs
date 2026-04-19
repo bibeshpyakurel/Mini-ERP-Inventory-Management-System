@@ -5,6 +5,7 @@ using ClearErp.Domain.Enums;
 using ClearErp.Infrastructure.Persistence;
 using ClearErp.Infrastructure.Persistence.Repositories;
 using ClearErp.Infrastructure.Persistence.Seeding;
+using ClearErp.Application.Common.Interfaces;
 using ClearErp.Infrastructure.Services;
 
 namespace ClearErp.UnitTests.Services;
@@ -146,6 +147,7 @@ public sealed class InventoryServiceTests
             new InventoryBalanceRepository(dbContext),
             new InventoryTransactionRepository(dbContext),
             new AuditLogRepository(dbContext),
+            new TestTenantContext(),
             dbContext);
 
     private static ApplicationDbContext CreateDbContext()
@@ -154,7 +156,7 @@ public sealed class InventoryServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, new NullTenantContext());
     }
 
     private static void SeedBaseData(ApplicationDbContext dbContext)
@@ -206,5 +208,15 @@ public sealed class InventoryServiceTests
         });
 
         dbContext.SaveChanges();
+    }
+
+    private sealed class NullTenantContext : ITenantContext
+    {
+        public Guid? TenantId => null;
+    }
+
+    private sealed class TestTenantContext : ITenantContext
+    {
+        public Guid? TenantId { get; } = Guid.NewGuid();
     }
 }

@@ -28,6 +28,7 @@ public sealed class ItemServiceTests
             new CategoryRepository(dbContext),
             new AuditLogRepository(dbContext),
             new TestCurrentUserService(SeedConstants.AdminUserId),
+            new TestTenantContext(),
             dbContext);
 
         var item = await service.CreateItemAsync(
@@ -75,6 +76,7 @@ public sealed class ItemServiceTests
             new CategoryRepository(dbContext),
             new AuditLogRepository(dbContext),
             new TestCurrentUserService(SeedConstants.AdminUserId),
+            new TestTenantContext(),
             dbContext);
 
         await service.UpdateItemAsync(
@@ -150,7 +152,7 @@ public sealed class ItemServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, new NullTenantContext());
     }
 
     private static ItemService CreateService(ApplicationDbContext dbContext) =>
@@ -159,6 +161,7 @@ public sealed class ItemServiceTests
             new CategoryRepository(dbContext),
             new AuditLogRepository(dbContext),
             new TestCurrentUserService(SeedConstants.AdminUserId),
+            new TestTenantContext(),
             dbContext);
 
     private static void SeedCategoryAndItems(ApplicationDbContext dbContext)
@@ -204,7 +207,19 @@ public sealed class ItemServiceTests
         public string? Email => "admin@clearerp.local";
         public IReadOnlyCollection<string> Roles => ["Admin"];
         public bool IsAuthenticated => true;
+        public Guid? TenantId => null;
+        public string? Industry => null;
 
         public bool IsInRole(string role) => Roles.Contains(role);
+    }
+
+    private sealed class NullTenantContext : ITenantContext
+    {
+        public Guid? TenantId => null;
+    }
+
+    private sealed class TestTenantContext : ITenantContext
+    {
+        public Guid? TenantId { get; } = Guid.NewGuid();
     }
 }

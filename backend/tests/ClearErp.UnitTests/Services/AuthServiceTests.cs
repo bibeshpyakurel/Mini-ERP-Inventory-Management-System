@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using ClearErp.Application.Common.Interfaces;
 using ClearErp.Domain.Common;
 using ClearErp.Domain.Entities;
 using ClearErp.Infrastructure.Auth;
@@ -16,50 +17,43 @@ public sealed class AuthServiceTests
     {
         await using var dbContext = CreateDbContext();
         var passwordHasher = new Pbkdf2PasswordHasher();
-        var adminRole = new Role
+
+        var tenant = new Tenant
         {
-            Id = Guid.NewGuid(),
-            Name = "Admin"
+            Id = SeedConstants.FurnitureTenantId,
+            Name = "ClearFurniture Corp",
+            Slug = "furniture",
+            Industry = "Furniture",
+            IsActive = true
         };
+
+        var adminRole = new Role { Id = Guid.NewGuid(), Name = "Admin" };
 
         var user = new User
         {
             Id = SeedConstants.AdminUserId,
-            Email = "admin@clearerp.local",
+            TenantId = SeedConstants.FurnitureTenantId,
+            Email = "admin@clearfurniture.local",
             PasswordHash = passwordHasher.HashPassword("Admin123!"),
             FullName = "Admin",
             IsActive = true
         };
-        user.UserRoles.Add(new UserRole
-        {
-            UserId = user.Id,
-            RoleId = adminRole.Id,
-            Role = adminRole
-        });
+        user.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = adminRole.Id, Role = adminRole });
 
+        dbContext.Tenants.Add(tenant);
         dbContext.Roles.Add(adminRole);
         dbContext.Users.Add(user);
         await dbContext.SaveChangesAsync();
 
-        var authService = new AuthService(
-            new UserRepository(dbContext),
-            passwordHasher,
-            new JwtTokenGenerator(Options.Create(new JwtOptions
-            {
-                Issuer = "ClearErp",
-                Audience = "ClearErp.Client",
-                Key = "local-development-jwt-signing-key-change-before-production",
-                ExpirationMinutes = 60
-            })),
-            new AuditLogRepository(dbContext),
-            dbContext);
+        var authService = CreateAuthService(dbContext, passwordHasher);
 
-        var result = await authService.LoginAsync("admin@clearerp.local", "Admin123!");
+        var result = await authService.LoginAsync("admin@clearfurniture.local", "Admin123!", "furniture");
 
         var auditLog = await dbContext.AuditLogs.SingleAsync();
         Assert.False(string.IsNullOrWhiteSpace(result.AccessToken));
-        Assert.Equal("admin@clearerp.local", result.Email);
+        Assert.Equal("admin@clearfurniture.local", result.Email);
         Assert.Contains("Admin", result.Roles);
+        Assert.Equal(SeedConstants.FurnitureTenantId, result.TenantId);
         Assert.Equal("LoginSucceeded", auditLog.Action);
     }
 
@@ -69,18 +63,48 @@ public sealed class AuthServiceTests
         await using var dbContext = CreateDbContext();
         var passwordHasher = new Pbkdf2PasswordHasher();
 
+        dbContext.Tenants.Add(new Tenant
+        {
+            Id = SeedConstants.FurnitureTenantId,
+            Name = "ClearFurniture Corp",
+            Slug = "furniture",
+            Industry = "Furniture",
+            IsActive = true
+        });
         dbContext.Users.Add(new User
         {
             Id = SeedConstants.AdminUserId,
-            Email = "admin@clearerp.local",
+            TenantId = SeedConstants.FurnitureTenantId,
+            Email = "admin@clearfurniture.local",
             PasswordHash = passwordHasher.HashPassword("Admin123!"),
             FullName = "Admin",
             IsActive = true
         });
         await dbContext.SaveChangesAsync();
 
-        var authService = new AuthService(
-            new UserRepository(dbContext),
+        var authService = CreateAuthService(dbContext, passwordHasher);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            authService.LoginAsync("admin@clearfurniture.local", "WrongPassword!", "furniture"));
+
+        var auditLog = await dbContext.AuditLogs.SingleAsync();
+        Assert.Equal("LoginFailed", auditLog.Action);
+    }
+
+    [Fact]
+    public async Task LoginAsync_Should_ThrowUnauthorized_WhenTenantSlugIsInvalid()
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new Pbkdf2PasswordHasher();
+
+        var authService = CreateAuthService(dbContext, passwordHasher);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            authService.LoginAsync("admin@clearfurniture.local", "Admin123!", "nonexistent-tenant"));
+    }
+
+    private static AuthService CreateAuthService(ApplicationDbContext dbContext, Pbkdf2PasswordHasher passwordHasher) =>
+        new(
             passwordHasher,
             new JwtTokenGenerator(Options.Create(new JwtOptions
             {
@@ -92,21 +116,17 @@ public sealed class AuthServiceTests
             new AuditLogRepository(dbContext),
             dbContext);
 
-        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() =>
-            authService.LoginAsync("admin@clearerp.local", "WrongPassword!"));
-
-        var auditLog = await dbContext.AuditLogs.SingleAsync();
-
-        Assert.Equal("Invalid email or password.", exception.Message);
-        Assert.Equal("LoginFailed", auditLog.Action);
-    }
-
     private static ApplicationDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, new NullTenantContext());
+    }
+
+    private sealed class NullTenantContext : ITenantContext
+    {
+        public Guid? TenantId => null;
     }
 }

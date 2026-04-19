@@ -5,6 +5,7 @@ using ClearErp.Domain.Enums;
 using ClearErp.Infrastructure.Persistence;
 using ClearErp.Infrastructure.Persistence.Repositories;
 using ClearErp.Infrastructure.Persistence.Seeding;
+using ClearErp.Application.Common.Interfaces;
 using ClearErp.Infrastructure.Services;
 
 namespace ClearErp.UnitTests.Services;
@@ -170,6 +171,7 @@ public sealed class GoodsReceiptServiceTests
             new InventoryBalanceRepository(dbContext),
             new InventoryTransactionRepository(dbContext),
             new AuditLogRepository(dbContext),
+            new TestTenantContext(),
             dbContext);
 
     private static ApplicationDbContext CreateDbContext()
@@ -178,7 +180,7 @@ public sealed class GoodsReceiptServiceTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, new NullTenantContext());
     }
 
     private static void SeedReceiptData(ApplicationDbContext dbContext, PurchaseOrderStatus status)
@@ -289,5 +291,15 @@ public sealed class GoodsReceiptServiceTests
         dbContext.PurchaseOrders.Add(purchaseOrder);
         dbContext.PurchaseOrderLines.Add(poLine);
         dbContext.SaveChanges();
+    }
+
+    private sealed class NullTenantContext : ITenantContext
+    {
+        public Guid? TenantId => null;
+    }
+
+    private sealed class TestTenantContext : ITenantContext
+    {
+        public Guid? TenantId { get; } = Guid.NewGuid();
     }
 }

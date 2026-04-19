@@ -10,10 +10,10 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { AppFormTextField } from "../../components/AppFormTextField";
-import { locationOptions, warehouseOptions } from "../inventory/constants";
+import type { WarehouseOption } from "../inventory/warehousesApi";
 import type { PurchaseOrder, ReceivePurchaseOrderInput } from "./types";
 
 const receiveFormSchema = z.object({
@@ -36,42 +36,59 @@ type ReceivePurchaseOrderDialogProps = {
   purchaseOrder: PurchaseOrder;
   isSubmitting: boolean;
   errorMessage?: string | null;
+  warehouses: WarehouseOption[];
   onClose: () => void;
   onSubmit: (values: ReceivePurchaseOrderInput) => Promise<void>;
 };
 
-const getDefaultValues = (purchaseOrder: PurchaseOrder): ReceiveFormValues => ({
-  receiptNumber: `GR-${purchaseOrder.poNumber.replace("PO-", "")}`,
-  warehouseId: warehouseOptions[0].id,
-  locationId: locationOptions[0].id,
-  lines: purchaseOrder.lines
-    .filter((line) => line.receivedQuantity < line.orderedQuantity)
-    .map((line) => ({
-      purchaseOrderLineId: line.id,
-      itemId: line.itemId,
-      receivedQuantity: line.orderedQuantity - line.receivedQuantity,
-    })),
-});
+const getDefaultValues = (purchaseOrder: PurchaseOrder, warehouses: WarehouseOption[]): ReceiveFormValues => {
+  const firstWarehouse = warehouses[0];
+  const firstLocation = firstWarehouse?.locations[0];
+  return {
+    receiptNumber: `GR-${purchaseOrder.poNumber.replace("PO-", "")}`,
+    warehouseId: firstWarehouse?.id ?? "",
+    locationId: firstLocation?.id ?? "",
+    lines: purchaseOrder.lines
+      .filter((line) => line.receivedQuantity < line.orderedQuantity)
+      .map((line) => ({
+        purchaseOrderLineId: line.id,
+        itemId: line.itemId,
+        receivedQuantity: line.orderedQuantity - line.receivedQuantity,
+      })),
+  };
+};
 
 export function ReceivePurchaseOrderDialog({
   open,
   purchaseOrder,
   isSubmitting,
   errorMessage,
+  warehouses,
   onClose,
   onSubmit,
 }: ReceivePurchaseOrderDialogProps) {
-  const { control, handleSubmit, reset, setError } = useForm<ReceiveFormValues>({
-    defaultValues: getDefaultValues(purchaseOrder),
+  const { control, handleSubmit, reset, setError, setValue } = useForm<ReceiveFormValues>({
+    defaultValues: getDefaultValues(purchaseOrder, warehouses),
   });
+
+  const selectedWarehouseId = useWatch({ control, name: "warehouseId" });
+  const selectedWarehouse = warehouses.find((w) => w.id === selectedWarehouseId) ?? null;
+  const locations = selectedWarehouse?.locations ?? [];
+
+  // When warehouse changes, reset location to first available
+  useEffect(() => {
+    const first = locations[0];
+    if (first) setValue("locationId", first.id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWarehouseId, setValue]);
 
   const receivableLines = purchaseOrder.lines.filter(
     (line) => line.receivedQuantity < line.orderedQuantity,
   );
 
   useEffect(() => {
-    reset(getDefaultValues(purchaseOrder));
-  }, [open, purchaseOrder, reset]);
+    reset(getDefaultValues(purchaseOrder, warehouses));
+  }, [open, purchaseOrder, warehouses, reset]);
 
   const submit = handleSubmit(async (values) => {
     const parsed = receiveFormSchema.safeParse(values);
@@ -127,14 +144,14 @@ export function ReceivePurchaseOrderDialog({
           <AppFormTextField control={control} name="receiptNumber" label="Receipt number" fullWidth />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <AppFormTextField control={control} name="warehouseId" label="Warehouse" select fullWidth>
-              {warehouseOptions.map((w) => (
+              {warehouses.map((w) => (
                 <MenuItem key={w.id} value={w.id}>
                   {w.code} – {w.name}
                 </MenuItem>
               ))}
             </AppFormTextField>
             <AppFormTextField control={control} name="locationId" label="Location" select fullWidth>
-              {locationOptions.map((l) => (
+              {locations.map((l) => (
                 <MenuItem key={l.id} value={l.id}>
                   {l.code} – {l.name}
                 </MenuItem>
