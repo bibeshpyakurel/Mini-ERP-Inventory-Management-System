@@ -167,29 +167,43 @@ The React frontend uses a feature-based structure:
 
 ```
 ClearERP/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                  # GitHub Actions CI pipeline
 ├── backend/
 │   ├── src/
-│   │   ├── ClearErp.Api/           # Controllers, contracts, middleware
+│   │   ├── ClearErp.Api/           # Controllers, contracts, middleware, validation
 │   │   ├── ClearErp.Application/   # Services, interfaces, DTOs
 │   │   ├── ClearErp.Domain/        # Entities, enums, domain logic
-│   │   └── ClearErp.Infrastructure/# EF Core, seeding, auth
-│   └── tests/
-│       ├── ClearErp.UnitTests/
-│       └── ClearErp.IntegrationTests/
+│   │   └── ClearErp.Infrastructure/# EF Core, migrations, seeding, auth
+│   ├── tests/
+│   │   ├── ClearErp.UnitTests/
+│   │   └── ClearErp.IntegrationTests/
+│   ├── Dockerfile
+│   ├── railway.toml
+│   ├── .env.example
+│   └── ClearErp.sln
 ├── frontend/
 │   ├── src/
-│   │   ├── api/                    # API client
+│   │   ├── api/                    # API client and type definitions
 │   │   ├── app/                    # App config, routes, navigation
 │   │   ├── components/             # Shared UI components
-│   │   ├── features/               # Feature modules (auth, items, etc.)
+│   │   ├── features/               # Feature modules (auth, items, POs, etc.)
 │   │   ├── layouts/                # Page layouts
 │   │   └── pages/                  # Route pages
-│   └── public/
+│   ├── public/
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   ├── railway.toml
+│   └── .env.example
 ├── docs/
 │   ├── api/                        # API endpoint documentation
 │   ├── architecture/               # Design documents
-│   └── screenshots/                # UI screenshots
-└── docker-compose.yml
+│   ├── screenshots/                # UI screenshots
+│   └── demo-playbook.md
+├── .env.example
+├── docker-compose.yml
+└── SECURITY.md
 ```
 
 ---
