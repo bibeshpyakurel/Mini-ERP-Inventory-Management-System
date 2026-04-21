@@ -195,6 +195,10 @@ var app = builder.Build();
 // Skip auto-migration in test environments (handled by test infrastructure)
 if (!app.Environment.IsEnvironment("Testing"))
 {
+    var connectionString = app.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrWhiteSpace(connectionString))
+        throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
+
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync();

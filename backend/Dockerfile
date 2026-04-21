@@ -17,6 +17,6 @@ RUN dotnet publish src/ClearErp.Api/ClearErp.Api.csproj -c Release -o /app/publi
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 COPY --from=builder /app/publish .
-EXPOSE 5000
-ENV ASPNETCORE_URLS=http://0.0.0.0:5000
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 CMD ["dotnet", "ClearErp.Api.dll"]
