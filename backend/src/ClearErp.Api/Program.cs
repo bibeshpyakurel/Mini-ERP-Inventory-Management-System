@@ -205,6 +205,7 @@ if (!app.Environment.IsEnvironment("Testing"))
     await dbContext.Database.MigrateAsync();
 }
 
+app.UseCors("Frontend");
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
@@ -214,7 +215,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
     app.UseHttpsRedirection();
 }
-app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseStatusCodePages(async statusCodeContext =>
