@@ -75,10 +75,9 @@ public sealed class DemoResetService(IApplicationDbContext dbContext) : IDemoRes
             .Where(x => x.TenantId == tenantId)
             .ExecuteDeleteAsync(cancellationToken);
 
-        // Run migrations to re-seed the data
-        // Note: EF Core's HasData() will re-insert the seed data on next migration
-        // For a full reset, the database needs to be recreated
-        // This deletes all user-created data and the seed data will be restored on next app restart
+        // NOTE: EF Core's HasData() seed is applied via migrations, not on app restart.
+        // Once deleted here the seed data does NOT come back automatically — the database
+        // must be dropped and recreated (or the migration re-run) to restore it.
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

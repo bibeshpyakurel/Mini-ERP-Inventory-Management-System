@@ -12,6 +12,12 @@ public sealed class ApplicationDbContext(
     ITenantContext tenantContext)
     : DbContext(options), IApplicationDbContext
 {
+    // Exposed as a property so Expression.Constant(this) + Expression.Property(…, nameof(TenantCtx))
+    // lets EF Core's DbContextReplacingExpressionVisitor swap in the *current* DbContext
+    // instance per-query, giving the correct scoped ITenantContext (and thus the correct
+    // tenant ID) rather than the startup-time instance that had no HTTP context.
+    private ITenantContext TenantCtx { get; } = tenantContext;
+
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<GoodsReceipt> GoodsReceipts => Set<GoodsReceipt>();
@@ -38,13 +44,27 @@ public sealed class ApplicationDbContext(
 
         // Apply tenant filter to all TenantEntity-derived types.
         // When TenantId is null (migrations, background jobs, seeding) the filter is bypassed.
+        //
+        // IMPORTANT: we must NOT use Expression.Constant(tenantContext) here.
+        // OnModelCreating is called once at startup (during MigrateAsync) when there is
+        // no HTTP context, so tenantContext.TenantId == null at that point. EF Core would
+        // bake that null into the compiled query cache and the filter would always be WHERE TRUE,
+        // leaking every tenant's data to every user.
+        //
+        // Instead we route through Expression.Constant(this) → TenantCtx → TenantId.
+        // EF Core's DbContextReplacingExpressionVisitor replaces the captured DbContext
+        // constant with the *current* DbContext instance at query-execution time, so
+        // TenantCtx returns the scoped ITenantContext for the live HTTP request.
+        var tenantCtxProperty = typeof(ApplicationDbContext).GetProperty(
+            nameof(TenantCtx), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()
             .Where(t => typeof(TenantEntity).IsAssignableFrom(t.ClrType)))
         {
             var parameter = Expression.Parameter(entityType.ClrType, "e");
             var tenantIdProperty = Expression.Property(parameter, nameof(TenantEntity.TenantId));
             var tenantContextTenantId = Expression.Property(
-                Expression.Constant(tenantContext),
+                Expression.Property(Expression.Constant(this), tenantCtxProperty),
                 nameof(ITenantContext.TenantId));
             var hasNoTenant = Expression.Equal(tenantContextTenantId, Expression.Constant(null, typeof(Guid?)));
             var tenantMatches = Expression.Equal(
